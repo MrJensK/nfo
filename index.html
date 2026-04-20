@@ -927,6 +927,7 @@ function pasteClipboard() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function saveCurrentTab() {
+  if (activeTab < 0 || activeTab >= tabs.length) return;
   const t = tabs[activeTab];
   t.name = lastFile ? lastFile.name : t.name;
   t.sparseMap=sparseMap; t.lastFile=lastFile; t.lastBytes=lastBytes;
