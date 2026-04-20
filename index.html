@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFO / ANS EDITOR</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  @font-face {
+    font-family: 'IBM VGA 8x16';
+    src: url('ibm_vga_8x16.woff') format('woff');
+    font-weight: normal; font-style: normal;
+  }
+  :root {
+    --bg:#0a0a0a; --border:#1a1a1a; --cyan:#00e5cc;
+    --cyan-dk:#006b5e; --white:#cccccc; --dim:#3a3a3a; --dim2:#555555;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--white);font-family:'Share Tech Mono','Courier New',monospace;font-size:13px;min-height:100vh}
+  #topbar{position:sticky;top:0;z-index:100;background:#000;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:7px 16px;flex-wrap:wrap}
+  .logo{color:var(--cyan);font-size:13px;letter-spacing:3px;text-shadow:0 0 10px rgba(0,229,204,.35);white-space:nowrap}
+  .logo em{color:var(--dim2);font-style:normal}
+  .tb-btn{background:none;border:1px solid var(--cyan-dk);color:var(--cyan);font-family:inherit;font-size:11px;padding:3px 10px;cursor:pointer;letter-spacing:1px;transition:all .15s;white-space:nowrap}
+  .tb-btn:hover{background:var(--cyan-dk);color:#fff}
+  .tb-btn.dim{border-color:var(--dim);color:var(--dim2)}
+  .tb-btn.dim:hover{border-color:var(--cyan-dk);color:var(--cyan)}
+  .tb-btn.hidden{display:none}
+  .tb-btn.active{border-color:var(--cyan);background:rgba(0,229,204,.08);color:var(--cyan)}
+  #filename{color:var(--dim2);font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  #width-wrap{display:none;align-items:center;gap:6px}
+  #width-wrap.visible{display:flex}
+  #width-wrap label{color:var(--dim2);font-size:11px}
+  #width-sel{background:#000;border:1px solid var(--dim);color:var(--cyan);font-family:inherit;font-size:11px;padding:2px 6px;cursor:pointer}
+  #file-input{display:none}
+  #img-input{display:none}
+  #dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 45px);cursor:pointer;transition:background .2s;gap:14px}
+  #dropzone.over{background:rgba(0,229,204,.03)}
+  .drop-box{border:1px dashed var(--cyan-dk);padding:36px 56px;text-align:center;pointer-events:none}
+  .drop-title{color:var(--cyan);font-size:13px;letter-spacing:3px;margin-bottom:10px}
+  .drop-sub{color:var(--dim2);font-size:11px;line-height:1.9;letter-spacing:1px}
+  .deco{color:var(--dim);font-size:11px;pointer-events:none;user-select:none}
+  #output-wrap{display:none;padding:16px 16px 80px;overflow:auto}
+  #output-wrap.visible{display:block}
+  #output-wrap.centered{display:flex !important;justify-content:center;align-items:flex-start}
+  #canvas-wrap{position:relative;display:inline-block;line-height:0}
+  #screen{display:block;image-rendering:-webkit-optimize-contrast;image-rendering:pixelated;cursor:crosshair}
+  #screen:focus{outline:none}
+  #cursor-el{position:absolute;pointer-events:none;box-sizing:border-box;border:1px solid var(--cyan);display:none;animation:cblink 1s step-end infinite}
+  @keyframes cblink{50%{opacity:0}}
+  #statusbar{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid var(--border);padding:3px 16px;font-size:11px;color:var(--dim2);display:flex;gap:20px;flex-wrap:wrap;z-index:80}
+  #statusbar b{color:var(--cyan-dk);font-weight:normal}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:#000}
+  ::-webkit-scrollbar-thumb{background:var(--cyan-dk)}
+  #editbar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:#000;border-top:1px solid var(--cyan-dk);padding:5px 16px;gap:8px;align-items:center;flex-wrap:wrap}
+  #editbar.visible{display:flex}
+  .eb-label{color:var(--dim2);font-size:10px;letter-spacing:1px;-webkit-user-select:none;user-select:none;white-space:nowrap}
+  .eb-sep{width:1px;height:16px;background:var(--dim);flex-shrink:0}
+  .csw{width:14px;height:14px;display:inline-block;cursor:pointer;border:1px solid #333;flex-shrink:0;transition:transform .1s,border-color .1s;position:relative}
+  .csw:hover{border-color:var(--cyan);transform:scale(1.3);z-index:1}
+  .csw.sel{border:2px solid #fff !important}
+  .eb-btn{background:none;border:1px solid var(--dim);color:var(--dim2);font-family:inherit;font-size:10px;padding:2px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;white-space:nowrap}
+  .eb-btn:hover{border-color:var(--cyan-dk);color:var(--cyan)}
+  .eb-btn.active{border-color:var(--cyan);color:var(--cyan)}
+  .swatch-row{display:flex;gap:2px}
+  #active-char-wrap{display:flex;align-items:center;gap:4px;cursor:pointer}
+  #active-char-box{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--cyan-dk);font-family:'IBM VGA 8x16',monospace;font-size:16px;line-height:1;background:#000;color:#fff}
+  #active-char-wrap:hover #active-char-box{border-color:var(--cyan)}
+  #charpicker{display:none;position:fixed;z-index:200;background:#000;border:1px solid var(--cyan-dk);padding:6px;box-shadow:0 0 20px rgba(0,0,0,.9)}
+  #charpicker.visible{display:block}
+  #canvas-bg-picker{display:none;position:fixed;z-index:200;background:#000;border:1px solid var(--cyan-dk);padding:6px;box-shadow:0 0 20px rgba(0,0,0,.9)}
+  #canvas-bg-picker.visible{display:block}
+  #cbp-grid{display:grid;grid-template-columns:repeat(8,18px);gap:2px}
+  #canvas-bg-swatch{width:22px;height:22px;border:1px solid var(--cyan-dk);cursor:pointer;flex-shrink:0}
+  #canvas-bg-swatch:hover{border-color:var(--cyan)}
+  /* Tab bar */
+  #tabbar{position:sticky;top:0;z-index:95;background:#000;border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;flex-shrink:0}
+  .tab{background:none;border:none;border-right:1px solid var(--border);color:var(--dim2);font-family:inherit;font-size:11px;padding:4px 10px 4px 12px;cursor:pointer;letter-spacing:1px;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+  .tab:hover{background:rgba(255,255,255,.03);color:var(--white)}
+  .tab.active{background:rgba(0,229,204,.05);color:var(--cyan);border-bottom:2px solid var(--cyan)}
+  .tab-x{opacity:.4;font-size:13px;line-height:1;cursor:pointer;padding:0 2px;-webkit-user-select:none;user-select:none}
+  .tab-x:hover{opacity:1}
+  #tab-add{background:none;border:none;color:var(--dim2);font-family:inherit;font-size:16px;line-height:1;padding:0 12px;cursor:pointer}
+  #tab-add:hover{color:var(--cyan)}
+  #cp-grid{display:grid;grid-template-columns:repeat(32,18px);gap:1px}
+  .cpc{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-family:'IBM VGA 8x16',monospace;font-size:13px;line-height:1;cursor:pointer;color:#aaa;border:1px solid transparent;-webkit-user-select:none;user-select:none}
+  .cpc:hover{background:var(--cyan-dk);color:#fff}
+  .cpc.sel{border-color:var(--cyan);color:var(--cyan)}
+  #new-dlg{display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:1px solid var(--cyan-dk);padding:24px;min-width:260px}
+  #new-dlg.visible{display:block}
+  #new-dlg h3{color:var(--cyan);font-size:11px;letter-spacing:2px;margin-bottom:16px}
+  .dlg-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .dlg-row label{color:var(--dim2);font-size:11px;width:70px}
+  .dlg-row input{background:#000;border:1px solid var(--dim);color:var(--cyan);font-family:inherit;font-size:11px;padding:3px 8px;width:90px}
+  .dlg-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+  #overlay{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6)}
+  #overlay.visible{display:block}
+  #help-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.82);align-items:center;justify-content:center}
+  #help-overlay.visible{display:flex}
+  #help-box{background:#0a0a0a;border:1px solid var(--cyan-dk);padding:28px 32px;max-width:580px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,229,204,.08)}
+  #help-box h2{color:var(--cyan);font-size:11px;letter-spacing:4px;margin-bottom:20px;text-align:center}
+  .help-section{margin-bottom:18px}
+  .help-section h3{color:var(--dim2);font-size:10px;letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px}
+  .help-row{display:flex;gap:12px;margin-bottom:5px;align-items:baseline}
+  .help-key{color:var(--cyan);font-size:11px;min-width:160px;flex-shrink:0}
+  .help-key kbd{background:#111;border:1px solid var(--cyan-dk);padding:1px 5px;border-radius:2px;font-family:inherit;font-size:10px}
+  .help-desc{color:var(--white);font-size:11px;opacity:.75}
+  #help-close{display:block;margin:20px auto 0;background:none;border:1px solid var(--cyan-dk);color:var(--cyan);font-family:inherit;font-size:11px;padding:4px 20px;cursor:pointer;letter-spacing:1px}
+  #help-close:hover{background:var(--cyan-dk)}
+  #help-titlebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  #help-titlebar h2{margin-bottom:0}
+  #os-toggle{display:flex;border:1px solid var(--cyan-dk);font-size:10px}
+  .os-btn{background:none;color:var(--dim2);border:none;padding:3px 10px;font-family:inherit;cursor:pointer;letter-spacing:1px}
+  .os-btn.active{background:var(--cyan-dk);color:#fff}
+  /* Active color preview */
+  #color-preview{position:relative;width:30px;height:24px;flex-shrink:0;cursor:default}
+  #cp-bg-box{position:absolute;bottom:0;right:0;width:18px;height:18px;border:1px solid #444}
+  #cp-fg-box{position:absolute;top:0;left:0;width:18px;height:18px;border:1px solid #aaa;box-shadow:0 0 0 1px #000}
+  /* Image convert dialog */
+  #img-dlg{display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:1px solid var(--cyan-dk);padding:24px;min-width:280px}
+  #img-dlg.visible{display:block}
+  #img-dlg h3{color:var(--cyan);font-size:11px;letter-spacing:2px;margin-bottom:16px}
+  .dlg-check{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .dlg-check label{color:var(--dim2);font-size:11px}
+  .dlg-check input[type=checkbox]{accent-color:var(--cyan);cursor:pointer}
+  #img-preview-wrap{margin:12px 0;text-align:center;min-height:40px}
+  #img-preview{max-width:100%;max-height:200px;image-rendering:pixelated}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="logo">NFO<em>::</em>ANS<em>::</em>EDITOR</div>
+  <button type="button" class="tb-btn" onclick="document.getElementById('file-input').click()" title="Ctrl+O">[ OPEN ]</button>
+  <button type="button" class="tb-btn dim" onclick="showNewDlg()" title="Ctrl+N">[ NEW ]</button>
+  <button type="button" class="tb-btn dim" onclick="document.getElementById('img-input').click()" title="Konvertera bild till ANSI">[ BILD→ANS ]</button>
+  <input type="file" id="file-input" accept=".nfo,.ans,.txt,.diz,.asc,.ansi">
+  <input type="file" id="img-input" accept="image/*" title="Välj bild att konvertera till ANSI">
+  <div id="filename">drop .nfo / .ans anywhere</div>
+  <div id="width-wrap">
+    <label>cols:</label>
+    <select id="width-sel" onchange="rerender()">
+      <option value="80">80</option>
+      <option value="160">160</option>
+      <option value="0">auto</option>
+    </select>
+  </div>
+  <button type="button" id="export-btn" class="tb-btn dim hidden" onclick="exportHTML()" title="Ctrl+Shift+S">[ EXPORT HTML ]</button>
+  <button type="button" id="exportans-btn" class="tb-btn dim hidden" onclick="exportANS()" title="Ctrl+S">[ EXPORT ANS ]</button>
+  <button type="button" id="edit-btn" class="tb-btn dim hidden" onclick="toggleEdit()" title="Esc (exit edit)">[ EDIT ]</button>
+  <button type="button" class="tb-btn dim" onclick="showHelp()" title="?">[ ? ]</button>
+</div>
+
+<div id="tabbar"></div>
+
+<div id="help-overlay" onclick="hideHelp()">
+  <div id="help-box" onclick="event.stopPropagation()">
+    <div id="help-titlebar">
+      <h2>KEYBOARD SHORTCUTS</h2>
+      <div id="os-toggle">
+        <button type="button" id="os-win" class="os-btn active" onclick="setOsMode('win')">WIN</button>
+        <button type="button" id="os-mac" class="os-btn" onclick="setOsMode('mac')">MAC</button>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>GLOBAL</h3>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>O</kbd></span><span class="help-desc">Öppna fil</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>N</kbd></span><span class="help-desc">Ny canvas</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>S</kbd></span><span class="help-desc">Exportera ANS</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></span><span class="help-desc">Exportera HTML</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>Z</kbd></span><span class="help-desc">Ångra</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>Y</kbd></span><span class="help-desc">Gör om</span></div>
+    </div>
+
+    <div class="help-section">
+      <h3>EDIT-LÄGE</h3>
+      <div class="help-row"><span class="help-key"><kbd>Esc</kbd></span><span class="help-desc">Avsluta edit-läge</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Tab</kbd></span><span class="help-desc">Växla TEXT ↔ DRAW</span></div>
+      <div class="help-row"><span class="help-key"><kbd>F2</kbd></span><span class="help-desc">Öppna teckenpanel</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>Delete</kbd></span><span class="help-desc">Radera aktuell rad</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>Insert</kbd></span><span class="help-desc">Infoga tom rad</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>+</kbd></span><span class="help-desc">Zooma in</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>-</kbd></span><span class="help-desc">Zooma ut</span></div>
+    </div>
+
+    <div class="help-section">
+      <h3>TEXT-LÄGE</h3>
+      <div class="help-row"><span class="help-key"><kbd>Piltangenter</kbd></span><span class="help-desc">Flytta markör</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Home</kbd> / <kbd>End</kbd></span><span class="help-desc">Radstart / radslut</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Enter</kbd></span><span class="help-desc">Ny rad</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Backspace</kbd></span><span class="help-desc">Radera tecken till vänster</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Delete</kbd></span><span class="help-desc">Radera tecken vid markör</span></div>
+      <div class="help-row"><span class="help-key">Valfritt tecken</span><span class="help-desc">Skriv med aktiv FG/BG-färg</span></div>
+    </div>
+
+    <div class="help-section">
+      <h3>DRAW-LÄGE</h3>
+      <div class="help-row"><span class="help-key">Klick</span><span class="help-desc">Måla cell med aktivt tecken</span></div>
+      <div class="help-row"><span class="help-key">Klick + drag</span><span class="help-desc">Måla längs drag</span></div>
+      <div class="help-row"><span class="help-key"><kbd>F2</kbd></span><span class="help-desc">Välj aktivt tecken</span></div>
+    </div>
+
+    <button type="button" id="help-close" onclick="hideHelp()">[ STÄNG ]</button>
+  </div>
+</div>
+
+<div id="editbar">
+  <button type="button" class="eb-btn active" id="mode-text-btn" onclick="setMode('text')" title="Tab">[ TEXT ]</button>
+  <button type="button" class="eb-btn" id="mode-draw-btn" onclick="setMode('draw')" title="Tab">[ DRAW ]</button>
+  <button type="button" class="eb-btn" id="mode-sel-btn" onclick="setMode('select')" title="Markera område">[ SEL ]</button>
+  <div class="eb-sep"></div>
+  <div id="color-preview" title="Aktiv FG/BG">
+    <div id="cp-bg-box"></div>
+    <div id="cp-fg-box"></div>
+  </div>
+  <div class="eb-sep"></div>
+  <div id="active-char-wrap" onclick="toggleCharPicker(event)" title="F2 — pick character">
+    <span class="eb-label">CHAR:</span>
+    <div id="active-char-box">&#x2588;</div>
+  </div>
+  <div class="eb-sep"></div>
+  <span class="eb-label">FG:</span>
+  <div id="fg-swatches" class="swatch-row"></div>
+  <div class="eb-sep"></div>
+  <span class="eb-label">BG:</span>
+  <div id="bg-swatches" class="swatch-row"></div>
+  <div class="eb-sep"></div>
+  <span class="eb-label">YTA:</span>
+  <div id="canvas-bg-swatch" title="Arbetsytans bakgrundsfärg — klicka för att byta" onclick="toggleCanvasBgPicker(event)"></div>
+  <div class="eb-sep"></div>
+  <button type="button" class="eb-btn" onclick="deleteRow()" title="Ctrl+Delete">[ DEL ROW ]</button>
+  <button type="button" class="eb-btn" onclick="insertRow()" title="Ctrl+Insert">[ INS ROW ]</button>
+  <button type="button" class="eb-btn" id="center-btn" onclick="toggleCenter()">[ CENTER ]</button>
+  <button type="button" class="eb-btn" onclick="adjFont(1)" title="Ctrl++">[ A+ ]</button>
+  <button type="button" class="eb-btn" onclick="adjFont(-1)" title="Ctrl+-">[ A- ]</button>
+  <div class="eb-sep"></div>
+  <button type="button" class="eb-btn" onclick="undo()" title="Ctrl+Z">[ &#x21A9; UNDO ]</button>
+  <button type="button" class="eb-btn" onclick="redo()" title="Ctrl+Y / Ctrl+Shift+Z">[ &#x21AA; REDO ]</button>
+  <div class="eb-sep"></div>
+  <span class="eb-label" id="cur-pos">0,0</span>
+</div>
+
+<div id="charpicker"><div id="cp-grid"></div></div>
+<div id="canvas-bg-picker"><div id="cbp-grid"></div></div>
+
+<div id="overlay" onclick="hideActiveDialog()"></div>
+<div id="new-dlg">
+  <h3>NEW CANVAS</h3>
+  <div class="dlg-row"><label>Columns</label><input type="number" id="dlg-cols" value="80" min="20" max="320"></div>
+  <div class="dlg-row"><label>Rows</label><input type="number" id="dlg-rows" value="25" min="5" max="300"></div>
+  <div class="dlg-btns">
+    <button type="button" class="eb-btn" onclick="hideNewDlg()">[ CANCEL ]</button>
+    <button class="eb-btn active" onclick="createNewCanvas()">[ CREATE ]</button>
+  </div>
+</div>
+
+<div id="img-dlg">
+  <h3>BILD → ANSI</h3>
+  <div class="dlg-row"><label>Kolonner</label><input type="number" id="img-cols" value="80" min="10" max="320" oninput="imgAutoRows()"></div>
+  <div class="dlg-row"><label>Rader</label><input type="number" id="img-rows" value="40" min="5" max="300"></div>
+  <div class="dlg-check"><input type="checkbox" id="img-half" checked><label for="img-half">Halvblock ▀ (dubbel vertikal upplösning)</label></div>
+  <div class="dlg-check"><input type="checkbox" id="img-dither" checked><label for="img-dither">Dithering (bättre färgövergångar)</label></div>
+  <div class="dlg-check"><input type="checkbox" id="img-aspect" checked onchange="imgAutoRows()"><label for="img-aspect">Bevara proportioner</label></div>
+  <div id="img-preview-wrap"></div>
+  <div class="dlg-btns">
+    <button type="button" class="eb-btn" onclick="hideImgDlg()">[ AVBRYT ]</button>
+    <button type="button" class="eb-btn active" onclick="doImgConvert()">[ KONVERTERA ]</button>
+  </div>
+</div>
+
+<div id="dropzone" onclick="document.getElementById('file-input').click()">
+  <div class="deco">\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/</div>
+  <div class="drop-box">
+    <div class="drop-title">DROP FILE HERE</div>
+    <div class="drop-sub">.nfo &nbsp;.ans &nbsp;.diz &nbsp;.asc &nbsp;.txt<br>CP437 + ANSI color + cursor forward<br><br>click to browse &nbsp;·&nbsp; or [ NEW ] for blank canvas</div>
+  </div>
+  <div class="deco">\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/</div>
+</div>
+
+<div id="output-wrap">
+  <div id="canvas-wrap">
+    <canvas id="screen" tabindex="0"></canvas>
+    <div id="cursor-el"></div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <div>file: <b id="s-name">—</b></div>
+  <div>size: <b id="s-size">—</b></div>
+  <div>type: <b id="s-type">—</b></div>
+  <div>dims: <b id="s-dims">—</b></div>
+  <div>encoding: <b>CP437</b></div>
+</div>
+
+<script>
+'use strict';
+
+const CP437 = new Uint32Array([
+  0,0x263A,0x263B,0x2665,0x2666,0x2663,0x2660,0x2022,0x25D8,0x25CB,0x25D9,0x2642,0x2640,0x266A,0x266B,0x263C,
+  0x25BA,0x25C4,0x2195,0x203C,0xB6,0xA7,0x25AC,0x21A8,0x2191,0x2193,0x2192,0x2190,0x221F,0x2194,0x25B2,0x25BC,
+  0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x2D,0x2E,0x2F,
+  0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D,0x3E,0x3F,
+  0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F,
+  0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5A,0x5B,0x5C,0x5D,0x5E,0x5F,
+  0x60,0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,0x6A,0x6B,0x6C,0x6D,0x6E,0x6F,
+  0x70,0x71,0x72,0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7A,0x7B,0x7C,0x7D,0x7E,0x2302,
+  0xC7,0xFC,0xE9,0xE2,0xE4,0xE0,0xE5,0xE7,0xEA,0xEB,0xE8,0xEF,0xEE,0xEC,0xC4,0xC5,
+  0xC9,0xE6,0xC6,0xF4,0xF6,0xF2,0xFB,0xF9,0xFF,0xD6,0xDC,0xA2,0xA3,0xA5,0x20A7,0x192,
+  0xE1,0xED,0xF3,0xFA,0xF1,0xD1,0xAA,0xBA,0xBF,0x2310,0xAC,0xBD,0xBC,0xA1,0xAB,0xBB,
+  0x2591,0x2592,0x2593,0x2502,0x2524,0x2561,0x2562,0x2556,0x2555,0x2563,0x2551,0x2557,
+  0x255D,0x255C,0x255B,0x2510,0x2514,0x2534,0x252C,0x251C,0x2500,0x253C,0x255E,0x255F,
+  0x255A,0x2554,0x2569,0x2566,0x2560,0x2550,0x256C,0x2567,0x2568,0x2564,0x2565,0x2559,
+  0x2558,0x2552,0x2553,0x256B,0x256A,0x2518,0x250C,0x2588,0x2584,0x258C,0x2590,0x2580,
+  0x3B1,0xDF,0x393,0x3C0,0x3A3,0x3C3,0xB5,0x3C4,0x3A6,0x398,0x3A9,0x3B4,0x221E,0x3C6,
+  0x3B5,0x2229,0x2261,0xB1,0x2265,0x2264,0x2320,0x2321,0xF7,0x2248,0xB0,0x2219,0xB7,
+  0x221A,0x207F,0xB2,0x25A0,0xA0
+]);
+
+const CP437_REV = new Map();
+for (let i = 1; i < 256; i++) CP437_REV.set(CP437[i], i);
+CP437_REV.set(0x20, 0x20);
+
+const TRANSP_BG = 'repeating-conic-gradient(#888 0% 25%,#fff 0% 50%) 0/8px 8px';
+const PALETTE = [
+  '#000000','#aa0000','#00aa00','#aa5500',
+  '#0000aa','#aa00aa','#00aaaa','#aaaaaa',
+  '#555555','#ff5555','#55ff55','#ffff55',
+  '#5555ff','#ff55ff','#55ffff','#ffffff'
+];
+
+// ── Data model ───────────────────────────────────────────────────────────────
+let sparseMap = new Map();
+let lastBytes = null, lastFile = null;
+let canvasCols = 80, canvasRows = 25;
+let canvasBg = '#000000';
+
+// ── Canvas metrics ───────────────────────────────────────────────────────────
+const DPR = window.devicePixelRatio || 1;
+let CHAR_W = 8, CHAR_H = 16, fontScale = 1;
+
+document.fonts.ready.then(() => {
+  const off = document.createElement('canvas');
+  const octx = off.getContext('2d');
+  octx.font = '16px "IBM VGA 8x16"';
+  CHAR_W = Math.round(octx.measureText('\u2588').width) || 8;
+  if (sparseMap.size > 0) drawAll();
+});
+
+// ── Edit state ───────────────────────────────────────────────────────────────
+let editMode = false, drawMode = 'text';
+let curRow = 0, curCol = 0;
+let activeFg = 7, activeBg = -1;
+let activeChar = '\u2588';
+let isPainting = false, isCentered = false;
+let undoStack = [], redoStack = [];
+let selActive = false, selDragging = false;
+let selR1 = 0, selC1 = 0, selR2 = 0, selC2 = 0;
+let clipboard = null;
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function newTabState() {
+  return { name:'untitled', sparseMap:new Map(), lastFile:null, lastBytes:null,
+           canvasCols:80, canvasRows:25, canvasBg:'#000000',
+           undoStack:[], redoStack:[], isCentered:false };
+}
+let tabs = [newTabState()];
+let activeTab = 0;
+
+updateColorPreview();
+document.getElementById('canvas-bg-swatch').style.background = canvasBg;
+renderTabs();
+
+// ── Canvas rendering ─────────────────────────────────────────────────────────
+const canvas = document.getElementById('screen');
+let ctx = null;
+
+function cw() { return Math.round(fontScale * CHAR_W); }
+function ch() { return Math.round(fontScale * CHAR_H); }
+
+function getBounds(map) {
+  let maxRow = 0, maxCol = 0;
+  for (const key of map.keys()) {
+    const r = Math.floor(key / 100000), c = key % 100000;
+    if (r > maxRow) maxRow = r;
+    if (c > maxCol) maxCol = c;
+  }
+  return { maxRow, maxCol };
+}
+
+function drawAll() {
+  const { maxRow, maxCol } = getBounds(sparseMap);
+  const rows = Math.max(maxRow + 1, canvasRows);
+  const cols = Math.max(maxCol + 1, canvasCols);
+  const W = cols * cw(), H = rows * ch();
+
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+
+  ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  ctx.fillStyle = canvasBg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.font = `${fontScale * CHAR_H}px "IBM VGA 8x16"`;
+  ctx.textBaseline = 'top';
+
+  for (const [key, cell] of sparseMap) {
+    const row = Math.floor(key / 100000), col = key % 100000;
+    const x = col * cw(), y = row * ch();
+    if (cell.bg >= 0) {
+      ctx.fillStyle = PALETTE[cell.bg];
+      ctx.fillRect(x, y, cw(), ch());
+    }
+    ctx.fillStyle = PALETTE[cell.fg] || PALETTE[7];
+    ctx.fillText(cell.ch, x, y);
+  }
+  drawSelection();
+  updateCursor();
+}
+
+function drawCell(row, col, cell) {
+  if (!ctx) return;
+  const x = col * cw(), y = row * ch();
+  ctx.fillStyle = canvasBg;
+  ctx.fillRect(x, y, cw(), ch());
+  if (!cell) return;
+  if (cell.bg >= 0) {
+    ctx.fillStyle = PALETTE[cell.bg];
+    ctx.fillRect(x, y, cw(), ch());
+  }
+  ctx.font = `${fontScale * CHAR_H}px "IBM VGA 8x16"`;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = PALETTE[cell.fg] || PALETTE[7];
+  ctx.fillText(cell.ch, x, y);
+}
+
+function updateCursor() {
+  const el = document.getElementById('cursor-el');
+  if (!editMode || drawMode !== 'text') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.style.width  = cw() + 'px';
+  el.style.height = ch() + 'px';
+  el.style.left   = (curCol * cw()) + 'px';
+  el.style.top    = (curRow * ch()) + 'px';
+  document.getElementById('cur-pos').textContent = curRow + ',' + curCol;
+}
+
+// ── ANSI parser ───────────────────────────────────────────────────────────────
+function parse(bytes, cols) {
+  sparseMap = new Map();
+  let end = bytes.length;
+  for (let i = Math.max(0, end - 256); i < end - 5; i++) {
+    if (bytes[i]===0x53&&bytes[i+1]===0x41&&bytes[i+2]===0x55&&
+        bytes[i+3]===0x43&&bytes[i+4]===0x45) {
+      end = i;
+      if (end > 0 && bytes[end-1] === 0x1a) end--;
+      break;
+    }
+  }
+  let row = 0, col = 0, fg = 7, bg = -1, bold = false;
+  const COLS = cols || 80;
+  let wrapPending = false;
+  let i = 0;
+  while (i < end) {
+    const b = bytes[i];
+    if (b === 0x1b && i+1 < end && bytes[i+1] === 0x5b) {
+      i += 2;
+      let seq = '';
+      while (i < end && !(bytes[i] >= 0x41 && bytes[i] <= 0x7a))
+        seq += String.fromCharCode(bytes[i++]);
+      const cmd = i < end ? String.fromCharCode(bytes[i++]) : '';
+      const parts = seq.split(';');
+      const n0 = parts[0]===''||parts[0]==null ? 0 : parseInt(parts[0],10)||0;
+      if (cmd==='C') { col += n0||1; }
+      else if (cmd==='m') {
+        for (const n of parts.map(p=>p===''?0:parseInt(p,10)||0)) {
+          if (n===0)             { fg=7; bg=-1; bold=false; }
+          else if (n===1)        bold=true;
+          else if (n===22)       bold=false;
+          else if (n>=30&&n<=37) fg=n-30;
+          else if (n===39)       fg=7;
+          else if (n>=40&&n<=47) bg=n-40;
+          else if (n===49)       bg=-1;
+          else if (n>=90&&n<=97) fg=n-90+8;
+          else if (n>=100&&n<=107) bg=n-100+8;
+        }
+      } else if (cmd==='A') { row=Math.max(0,row-(n0||1)); }
+      else if (cmd==='B') { row+=n0||1; }
+      else if (cmd==='D') { col=Math.max(0,col-(n0||1)); }
+      else if (cmd==='H'||cmd==='f') {
+        row=Math.max(0,parseInt(parts[0]||'1',10)-1);
+        col=Math.max(0,parseInt(parts[1]||'1',10)-1);
+      } else if (cmd==='J') { if (n0===2) { sparseMap.clear(); row=0; col=0; } }
+      continue;
+    }
+    if (b===0x0d) { col=0; wrapPending=false; i++; continue; }
+    if (b===0x0a) { if (!wrapPending) row++; wrapPending=false; col=0; i++; continue; }
+    if (b===0x09) { col=(Math.floor(col/8)+1)*8; i++; continue; }
+    if (wrapPending) { row++; col=0; wrapPending=false; }
+    const fgIdx = bold ? Math.min(fg+8,15) : fg;
+    sparseMap.set(row*100000+col, { ch: String.fromCodePoint(CP437[b]), fg:fgIdx, bg });
+    col++;
+    if (COLS>0 && col>=COLS) { col=0; wrapPending=true; }
+    i++;
+  }
+}
+
+// ── File loading ──────────────────────────────────────────────────────────────
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    lastBytes = new Uint8Array(e.target.result);
+    lastFile = file;
+    doRender(parseInt(document.getElementById('width-sel').value, 10));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function doRender(cols) {
+  canvasCols = cols || 80;
+  parse(lastBytes, cols);
+  const { maxRow: mr } = getBounds(sparseMap);
+  canvasRows = mr + 1;
+  drawAll();
+  const { maxRow, maxCol } = getBounds(sparseMap);
+  const hasColor = [...sparseMap.values()].some(c => c.fg !== 7 || c.bg >= 0);
+  showOutput();
+  document.getElementById('filename').textContent = lastFile.name;
+  document.getElementById('s-name').textContent = lastFile.name;
+  document.getElementById('s-size').textContent = fmt(lastFile.size);
+  document.getElementById('s-type').textContent = hasColor ? 'ANSI color' : 'plain CP437';
+  document.getElementById('s-dims').textContent = `${maxCol+1}×${maxRow+1}`;
+  document.getElementById('width-wrap').classList.add('visible');
+  tabs[activeTab].name = lastFile.name;
+  renderTabs();
+}
+
+function rerender() {
+  if (!lastBytes) return;
+  doRender(parseInt(document.getElementById('width-sel').value, 10));
+}
+
+function showOutput() {
+  document.getElementById('output-wrap').classList.add('visible');
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('export-btn').classList.remove('hidden');
+  document.getElementById('exportans-btn').classList.remove('hidden');
+  document.getElementById('edit-btn').classList.remove('hidden');
+}
+
+function fmt(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  return (n/1048576).toFixed(2) + ' MB';
+}
+
+// ── Edit mode ─────────────────────────────────────────────────────────────────
+function toggleEdit() {
+  editMode = !editMode;
+  const editbar = document.getElementById('editbar');
+  const btn = document.getElementById('edit-btn');
+  const sb  = document.getElementById('statusbar');
+  editbar.classList.toggle('visible', editMode);
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? '[ EDITING ]' : '[ EDIT ]';
+  if (editMode) {
+    canvas.focus();
+    requestAnimationFrame(() => { sb.style.bottom = editbar.offsetHeight + 'px'; });
+    updateCursor();
+  } else {
+    sb.style.bottom = '';
+    document.getElementById('cursor-el').style.display = 'none';
+    hideCharPicker();
+  }
+}
+
+function setMode(m) {
+  drawMode = m;
+  document.getElementById('mode-text-btn').classList.toggle('active', m === 'text');
+  document.getElementById('mode-draw-btn').classList.toggle('active', m === 'draw');
+  document.getElementById('mode-sel-btn').classList.toggle('active', m === 'select');
+  canvas.style.cursor = (m === 'draw' || m === 'select') ? 'crosshair' : 'text';
+  if (m !== 'select') { selActive = false; if (ctx) drawAll(); }
+  updateCursor();
+}
+
+// ── Color swatches ────────────────────────────────────────────────────────────
+(function buildSwatches() {
+  const fgDiv = document.getElementById('fg-swatches');
+  const bgDiv = document.getElementById('bg-swatches');
+  PALETTE.forEach((color, i) => {
+    const fs = document.createElement('span');
+    fs.className = 'csw' + (i === activeFg ? ' sel' : '');
+    fs.style.background = color;
+    fs.title = 'FG ' + i;
+    fs.dataset.idx = i;
+    fs.addEventListener('mousedown', e => { e.preventDefault(); setActiveFg(i); });
+    fgDiv.appendChild(fs);
+    const bs = document.createElement('span');
+    bs.className = 'csw';
+    bs.style.background = color;
+    bs.title = 'BG ' + i;
+    bs.dataset.idx = i;
+    bs.addEventListener('mousedown', e => { e.preventDefault(); setActiveBg(i); });
+    bgDiv.appendChild(bs);
+  });
+  // Transparent BG swatch
+  const ns = document.createElement('span');
+  ns.className = 'csw sel';
+  ns.style.background = TRANSP_BG;
+  ns.title = 'BG none';
+  ns.dataset.idx = -1;
+  ns.addEventListener('mousedown', e => { e.preventDefault(); setActiveBg(-1); });
+  bgDiv.appendChild(ns);
+})();
+
+function updateColorPreview() {
+  document.getElementById('cp-fg-box').style.background = PALETTE[activeFg];
+  document.getElementById('cp-bg-box').style.background =
+    activeBg >= 0 ? PALETTE[activeBg] : TRANSP_BG;
+}
+function setActiveFg(i) {
+  activeFg = i;
+  document.querySelectorAll('#fg-swatches .csw').forEach(s =>
+    s.classList.toggle('sel', +s.dataset.idx === i));
+  updateColorPreview();
+}
+function setActiveBg(i) {
+  activeBg = i;
+  document.querySelectorAll('#bg-swatches .csw').forEach(s =>
+    s.classList.toggle('sel', +s.dataset.idx === i));
+  updateColorPreview();
+}
+
+// ── Char picker ───────────────────────────────────────────────────────────────
+(function buildCharPicker() {
+  const grid = document.getElementById('cp-grid');
+  for (let i = 1; i < 256; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cpc';
+    cell.textContent = String.fromCodePoint(CP437[i]);
+    cell.dataset.idx = i;
+    cell.title = '#' + i + ' 0x' + i.toString(16).toUpperCase().padStart(2,'0');
+    cell.addEventListener('click', () => {
+      activeChar = String.fromCodePoint(CP437[i]);
+      document.getElementById('active-char-box').textContent = activeChar;
+      document.querySelectorAll('.cpc').forEach(c => c.classList.toggle('sel', c === cell));
+      hideCharPicker();
+    });
+    grid.appendChild(cell);
+  }
+})();
+
+function toggleCharPicker(e) {
+  e.stopPropagation();
+  const picker = document.getElementById('charpicker');
+  if (picker.classList.contains('visible')) { hideCharPicker(); return; }
+  const ebH = document.getElementById('editbar').offsetHeight;
+  picker.style.bottom = (ebH + 4) + 'px';
+  picker.style.left = '16px';
+  picker.classList.add('visible');
+}
+function hideCharPicker() {
+  document.getElementById('charpicker').classList.remove('visible');
+}
+
+// ── Canvas background picker ──────────────────────────────────────────────────
+(function buildCanvasBgPicker() {
+  const grid = document.getElementById('cbp-grid');
+  PALETTE.forEach((color, i) => {
+    const s = document.createElement('div');
+    s.className = 'csw';
+    s.style.background = color;
+    s.title = color;
+    s.addEventListener('mousedown', e => { e.preventDefault(); setCanvasBg(color); });
+    grid.appendChild(s);
+  });
+})();
+
+function toggleCanvasBgPicker(e) {
+  e.stopPropagation();
+  const picker = document.getElementById('canvas-bg-picker');
+  if (picker.classList.contains('visible')) { hideCanvasBgPicker(); return; }
+  const ebH = document.getElementById('editbar').offsetHeight;
+  picker.style.bottom = (ebH + 4) + 'px';
+  const rect = document.getElementById('canvas-bg-swatch').getBoundingClientRect();
+  picker.style.left = rect.left + 'px';
+  picker.classList.add('visible');
+}
+function hideCanvasBgPicker() {
+  document.getElementById('canvas-bg-picker').classList.remove('visible');
+}
+function setCanvasBg(color) {
+  canvasBg = color;
+  document.getElementById('canvas-bg-swatch').style.background = color;
+  hideCanvasBgPicker();
+  if (ctx) drawAll();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('canvas-bg-picker').contains(e.target) &&
+      !document.getElementById('canvas-bg-swatch').contains(e.target))
+    hideCanvasBgPicker();
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('charpicker').contains(e.target) &&
+      !document.getElementById('active-char-wrap').contains(e.target))
+    hideCharPicker();
+});
+
+// ── Mouse on canvas ───────────────────────────────────────────────────────────
+function cellFromEvent(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    row: Math.max(0, Math.floor((e.clientY - rect.top)  / ch())),
+    col: Math.max(0, Math.floor((e.clientX - rect.left) / cw()))
+  };
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (!editMode) return;
+  e.preventDefault();
+  canvas.focus();
+  const { row, col } = cellFromEvent(e);
+  curRow = row; curCol = col;
+  if (drawMode === 'select') {
+    selActive = true; selDragging = true;
+    selR1 = selR2 = row; selC1 = selC2 = col;
+    drawAll();
+  } else if (drawMode === 'draw') {
+    pushUndo();
+    isPainting = true;
+    paintCell(row, col);
+  } else {
+    updateCursor();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!editMode) return;
+  const { row, col } = cellFromEvent(e);
+  if (drawMode === 'select' && selDragging) {
+    selR2 = row; selC2 = col; drawAll(); return;
+  }
+  if (!isPainting || drawMode !== 'draw') return;
+  paintCell(row, col);
+});
+
+canvas.addEventListener('mouseup',    () => { isPainting = false; selDragging = false; });
+canvas.addEventListener('mouseleave', () => { isPainting = false; selDragging = false; });
+
+function paintCell(row, col) {
+  const key = row * 100000 + col;
+  const cell = { ch: activeChar, fg: activeFg, bg: activeBg };
+  const existing = sparseMap.get(key);
+  if (existing && existing.ch===cell.ch && existing.fg===cell.fg && existing.bg===cell.bg) return;
+  sparseMap.set(key, cell);
+  drawCell(row, col, cell);
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+canvas.addEventListener('keydown', e => {
+  if (!editMode) return;
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  // ── Shortcuts available in both modes ────────────────────────────────────
+  if (ctrl && (e.key==='z'||e.key==='Z'))           { e.preventDefault(); undo(); return; }
+  if (ctrl && (e.key==='y'||e.key==='Y'))           { e.preventDefault(); redo(); return; }
+  if (ctrl && (e.key==='c'||e.key==='C'))           { e.preventDefault(); copySelection(); return; }
+  if (ctrl && (e.key==='x'||e.key==='X'))           { e.preventDefault(); cutSelection(); return; }
+  if (ctrl && (e.key==='v'||e.key==='V'))           { e.preventDefault(); pasteClipboard(); return; }
+  if (e.key==='Escape') {
+    if (selActive) { e.preventDefault(); selActive=false; drawAll(); return; }
+    e.preventDefault(); toggleEdit(); return;
+  }
+  if (e.key==='Tab')                                { e.preventDefault(); setMode(drawMode==='text'?'draw':'text'); return; }
+  if (ctrl && e.key==='Delete')                     { e.preventDefault(); deleteRow(); return; }
+  if (ctrl && e.key==='Insert')                     { e.preventDefault(); insertRow(); return; }
+  if (ctrl && (e.key==='='||e.key==='+'))           { e.preventDefault(); adjFont(1); return; }
+  if (ctrl && e.key==='-')                          { e.preventDefault(); adjFont(-1); return; }
+  if (e.key==='F2')                                 { e.preventDefault(); toggleCharPicker({stopPropagation:()=>{}}); return; }
+  if (e.metaKey && e.key==='Backspace')             { e.preventDefault(); if(drawMode==='text'){pushUndo();sparseMap.delete(curRow*100000+curCol);drawCell(curRow,curCol,null);updateCursor();} return; }
+
+  if (ctrl) return;
+
+  // ── Text mode navigation & editing ───────────────────────────────────────
+  if (drawMode !== 'text') return;
+  e.preventDefault();
+  switch (e.key) {
+    case 'ArrowRight': curCol++; break;
+    case 'ArrowLeft':  curCol = Math.max(0, curCol-1); break;
+    case 'ArrowDown':  curRow++; break;
+    case 'ArrowUp':    curRow = Math.max(0, curRow-1); break;
+    case 'Home':       curCol = 0; break;
+    case 'End': {
+      let mx = 0;
+      for (const k of sparseMap.keys())
+        if (Math.floor(k/100000)===curRow) mx = Math.max(mx, k%100000);
+      curCol = mx + 1;
+      break;
+    }
+    case 'Enter': curRow++; curCol = 0; break;
+    case 'Backspace':
+      if (curCol > 0) {
+        pushUndo();
+        curCol--;
+        sparseMap.delete(curRow*100000+curCol);
+        drawCell(curRow, curCol, null);
+      }
+      break;
+    case 'Delete':
+      pushUndo();
+      sparseMap.delete(curRow*100000+curCol);
+      drawCell(curRow, curCol, null);
+      break;
+    default:
+      if (e.key.length === 1) {
+        pushUndo();
+        const cell = { ch: e.key, fg: activeFg, bg: activeBg };
+        sparseMap.set(curRow*100000+curCol, cell);
+        drawCell(curRow, curCol, cell);
+        curCol++;
+      }
+  }
+  updateCursor();
+});
+
+// ── Global shortcuts (work outside canvas too) ────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('help-overlay').classList.contains('visible')) { hideHelp(); return; }
+    if (document.getElementById('img-dlg').classList.contains('visible'))      { hideImgDlg(); return; }
+    if (document.getElementById('new-dlg').classList.contains('visible'))      { hideNewDlg(); return; }
+  }
+  // ⌘+Backspace = Delete, works even when canvas lost focus
+  if (e.metaKey && e.key === 'Backspace' && editMode && drawMode === 'text') {
+    e.preventDefault();
+    pushUndo();
+    sparseMap.delete(curRow * 100000 + curCol);
+    drawCell(curRow, curCol, null);
+    updateCursor();
+    return;
+  }
+  if (document.activeElement === canvas) return; // handled above
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return;
+  if (e.key==='z'||e.key==='Z') { e.preventDefault(); undo(); }
+  if (e.key==='y'||e.key==='Y') { e.preventDefault(); redo(); }
+  if (e.key==='c'||e.key==='C') { e.preventDefault(); copySelection(); }
+  if (e.key==='x'||e.key==='X') { e.preventDefault(); cutSelection(); }
+  if (e.key==='v'||e.key==='V') { e.preventDefault(); pasteClipboard(); }
+  if (e.key==='o'||e.key==='O') { e.preventDefault(); document.getElementById('file-input').click(); }
+  if (e.key==='n'||e.key==='N') { e.preventDefault(); showNewDlg(); }
+  if (e.key==='s'&&!e.shiftKey) { e.preventDefault(); exportANS(); }
+  if (e.key==='s'&& e.shiftKey) { e.preventDefault(); exportHTML(); }
+});
+
+// ── Undo / redo ───────────────────────────────────────────────────────────────
+function cloneMap(m) {
+  const c = new Map();
+  for (const [k,v] of m) c.set(k, {...v});
+  return c;
+}
+function pushUndo() {
+  undoStack.push(cloneMap(sparseMap));
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+}
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(cloneMap(sparseMap));
+  sparseMap = undoStack.pop();
+  drawAll();
+}
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(cloneMap(sparseMap));
+  sparseMap = redoStack.pop();
+  drawAll();
+}
+
+// ── Selection & clipboard ─────────────────────────────────────────────────────
+function drawSelection() {
+  if (!selActive || !ctx) return;
+  const r1=Math.min(selR1,selR2), r2=Math.max(selR1,selR2);
+  const c1=Math.min(selC1,selC2), c2=Math.max(selC1,selC2);
+  ctx.fillStyle = 'rgba(0,229,204,0.18)';
+  ctx.fillRect(c1*cw(), r1*ch(), (c2-c1+1)*cw(), (r2-r1+1)*ch());
+  ctx.strokeStyle = 'rgba(0,229,204,0.85)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(c1*cw()+0.5, r1*ch()+0.5, (c2-c1+1)*cw()-1, (r2-r1+1)*ch()-1);
+}
+function copySelection() {
+  if (!selActive) return;
+  const r1=Math.min(selR1,selR2), r2=Math.max(selR1,selR2);
+  const c1=Math.min(selC1,selC2), c2=Math.max(selC1,selC2);
+  const cells = new Map();
+  for (let r=r1; r<=r2; r++)
+    for (let c=c1; c<=c2; c++) {
+      const cell = sparseMap.get(r*100000+c);
+      if (cell) cells.set((r-r1)*100000+(c-c1), {...cell});
+    }
+  clipboard = { cells, rows:r2-r1+1, cols:c2-c1+1 };
+}
+function cutSelection() {
+  if (!selActive) return;
+  copySelection();
+  pushUndo();
+  const r1=Math.min(selR1,selR2), r2=Math.max(selR1,selR2);
+  const c1=Math.min(selC1,selC2), c2=Math.max(selC1,selC2);
+  for (let r=r1; r<=r2; r++)
+    for (let c=c1; c<=c2; c++)
+      sparseMap.delete(r*100000+c);
+  selActive = false;
+  drawAll();
+}
+function pasteClipboard() {
+  if (!clipboard || !editMode) return;
+  pushUndo();
+  for (const [key, cell] of clipboard.cells) {
+    const dr = Math.floor(key/100000), dc = key%100000;
+    sparseMap.set((curRow+dr)*100000+(curCol+dc), {...cell});
+  }
+  drawAll();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function saveCurrentTab() {
+  const t = tabs[activeTab];
+  t.name = lastFile ? lastFile.name : t.name;
+  t.sparseMap=sparseMap; t.lastFile=lastFile; t.lastBytes=lastBytes;
+  t.canvasCols=canvasCols; t.canvasRows=canvasRows; t.canvasBg=canvasBg;
+  t.undoStack=undoStack; t.redoStack=redoStack; t.isCentered=isCentered;
+}
+function renderTabs() {
+  const bar = document.getElementById('tabbar');
+  bar.innerHTML = '';
+  tabs.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tab' + (i===activeTab ? ' active' : '');
+    btn.dataset.tabIdx = i;
+    const nm = document.createElement('span');
+    nm.textContent = t.name;
+    btn.appendChild(nm);
+    if (tabs.length > 1) {
+      const x = document.createElement('span');
+      x.className = 'tab-x';
+      x.textContent = '×';
+      x.dataset.closeIdx = i;
+      btn.appendChild(x);
+    }
+    bar.appendChild(btn);
+  });
+  const add = document.createElement('button');
+  add.type='button'; add.id='tab-add'; add.textContent='+'; add.title='Ny flik';
+  add.dataset.tabAdd = '1';
+  bar.appendChild(add);
+  bar.style.top = document.getElementById('topbar').offsetHeight + 'px';
+}
+function switchTab(idx) {
+  if (idx === activeTab) return;
+  saveCurrentTab();
+  if (editMode) toggleEdit();
+  activeTab = idx;
+  const t = tabs[idx];
+  sparseMap=t.sparseMap; lastFile=t.lastFile; lastBytes=t.lastBytes;
+  canvasCols=t.canvasCols; canvasRows=t.canvasRows; canvasBg=t.canvasBg;
+  undoStack=t.undoStack; redoStack=t.redoStack; isCentered=t.isCentered;
+  curRow=0; curCol=0; selActive=false;
+  document.getElementById('canvas-bg-swatch').style.background = canvasBg;
+  document.getElementById('output-wrap').classList.toggle('centered', isCentered);
+  document.getElementById('center-btn').classList.toggle('active', isCentered);
+  if (sparseMap.size > 0) {
+    showOutput();
+    drawAll();
+    document.getElementById('filename').textContent = t.name;
+    document.getElementById('s-name').textContent = t.name;
+    document.getElementById('width-wrap').classList.add('visible');
+  } else {
+    document.getElementById('output-wrap').classList.remove('visible');
+    document.getElementById('dropzone').style.display = '';
+    document.getElementById('export-btn').classList.add('hidden');
+    document.getElementById('exportans-btn').classList.add('hidden');
+    document.getElementById('edit-btn').classList.add('hidden');
+    document.getElementById('filename').textContent = 'drop .nfo / .ans anywhere';
+    document.getElementById('width-wrap').classList.remove('visible');
+  }
+  renderTabs();
+}
+function addTab() {
+  saveCurrentTab();
+  if (editMode) toggleEdit();
+  tabs.push(newTabState());
+  activeTab = tabs.length - 1;
+  const t = tabs[activeTab];
+  sparseMap=t.sparseMap; lastFile=null; lastBytes=null;
+  canvasCols=80; canvasRows=25; canvasBg='#000000'; isCentered=false;
+  undoStack=[]; redoStack=[]; curRow=0; curCol=0; selActive=false;
+  document.getElementById('canvas-bg-swatch').style.background = canvasBg;
+  document.getElementById('output-wrap').classList.remove('centered','visible');
+  document.getElementById('center-btn').classList.remove('active');
+  document.getElementById('dropzone').style.display = '';
+  document.getElementById('export-btn').classList.add('hidden');
+  document.getElementById('exportans-btn').classList.add('hidden');
+  document.getElementById('edit-btn').classList.add('hidden');
+  document.getElementById('filename').textContent = 'drop .nfo / .ans anywhere';
+  document.getElementById('width-wrap').classList.remove('visible');
+  renderTabs();
+}
+function closeTab(idx) {
+  if (tabs.length === 1) return;
+  const wasActive = idx === activeTab;
+  tabs.splice(idx, 1);
+  if (wasActive) {
+    activeTab = -1;
+    switchTab(Math.min(idx, tabs.length-1));
+  } else {
+    if (idx < activeTab) activeTab--;
+    renderTabs();
+  }
+}
+
+// ── New canvas ────────────────────────────────────────────────────────────────
+function showHelp() {
+  document.getElementById('help-overlay').classList.add('visible');
+}
+function hideHelp() {
+  document.getElementById('help-overlay').classList.remove('visible');
+}
+function setOsMode(os) {
+  document.getElementById('os-win').classList.toggle('active', os === 'win');
+  document.getElementById('os-mac').classList.toggle('active', os === 'mac');
+  document.querySelectorAll('#help-box .help-key kbd').forEach(kbd => {
+    if (kbd.textContent === 'Ctrl' || kbd.textContent === '⌘')
+      kbd.textContent = os === 'mac' ? '⌘' : 'Ctrl';
+  });
+}
+
+function showNewDlg() {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('new-dlg').classList.add('visible');
+}
+function hideActiveDialog() {
+  if (document.getElementById('img-dlg').classList.contains('visible')) { hideImgDlg(); return; }
+  hideNewDlg();
+}
+function hideNewDlg() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('new-dlg').classList.remove('visible');
+}
+function createNewCanvas() {
+  const cols = parseInt(document.getElementById('dlg-cols').value,10) || 80;
+  const rows = parseInt(document.getElementById('dlg-rows').value,10) || 25;
+  hideNewDlg();
+  sparseMap = new Map();
+  canvasCols = cols; canvasRows = rows;
+  lastFile = null; lastBytes = null;
+  undoStack = []; redoStack = [];
+  drawAll();
+  showOutput();
+  document.getElementById('filename').textContent = 'untitled.ans';
+  document.getElementById('s-name').textContent = 'untitled.ans';
+  document.getElementById('s-size').textContent = '—';
+  document.getElementById('s-type').textContent = 'new';
+  document.getElementById('s-dims').textContent = cols + '×' + rows;
+  document.getElementById('width-wrap').classList.add('visible');
+  tabs[activeTab].name = 'untitled.ans';
+  renderTabs();
+  if (!editMode) toggleEdit();
+  curRow = 0; curCol = 0;
+  updateCursor();
+}
+
+// ── Center / font size ────────────────────────────────────────────────────────
+function deleteRow() {
+  pushUndo();
+  const newMap = new Map();
+  for (const [k, v] of sparseMap) {
+    const r = Math.floor(k / 100000), c = k % 100000;
+    if (r === curRow) continue;
+    newMap.set((r < curRow ? r : r - 1) * 100000 + c, v);
+  }
+  sparseMap = newMap;
+  curRow = Math.max(0, curRow - (curRow > 0 ? 0 : 0));
+  drawAll();
+}
+
+function insertRow() {
+  pushUndo();
+  const newMap = new Map();
+  for (const [k, v] of sparseMap) {
+    const r = Math.floor(k / 100000), c = k % 100000;
+    newMap.set((r < curRow ? r : r + 1) * 100000 + c, v);
+  }
+  sparseMap = newMap;
+  drawAll();
+  updateCursor();
+}
+
+function toggleCenter() {
+  isCentered = !isCentered;
+  document.getElementById('output-wrap').classList.toggle('centered', isCentered);
+  document.getElementById('center-btn').classList.toggle('active', isCentered);
+}
+function adjFont(delta) {
+  const steps = [0.5,0.75,1,1.25,1.5,2,2.5,3];
+  let idx = steps.findIndex(s => Math.abs(s - fontScale) < 0.01);
+  if (idx < 0) idx = 2;
+  idx = Math.max(0, Math.min(steps.length-1, idx + delta));
+  fontScale = steps[idx];
+  if (sparseMap.size > 0 || canvasRows > 0) drawAll();
+}
+
+// ── Export HTML ───────────────────────────────────────────────────────────────
+function buildHtml(map) {
+  if (map.size === 0) return '';
+  const { maxRow, maxCol } = getBounds(map);
+  const lines = [];
+  for (let r = 0; r <= maxRow; r++) {
+    let rowMax = -1;
+    for (const k of map.keys())
+      if (Math.floor(k/100000)===r) rowMax = Math.max(rowMax, k%100000);
+    if (rowMax < 0) { lines.push(''); continue; }
+    let html = '', curFg = null, curBg = null, spanOpen = false;
+    for (let c = 0; c <= rowMax; c++) {
+      let ch2 = ' ', fgI = 7, bgI = -1;
+      const cell = map.get(r*100000+c);
+      if (cell) { ch2=cell.ch; fgI=cell.fg; bgI=cell.bg; }
+      const needStyle = fgI!==7||bgI>=0;
+      if (fgI!==curFg||bgI!==curBg) {
+        if (spanOpen) { html+='</span>'; spanOpen=false; }
+        if (needStyle) {
+          let st=`color:${PALETTE[fgI]};`;
+          if (bgI>=0) st+=`background:${PALETTE[bgI]};`;
+          html+=`<span style="${st}">`; spanOpen=true;
+        }
+        curFg=fgI; curBg=bgI;
+      }
+      if (ch2==='&') html+='&amp;';
+      else if (ch2==='<') html+='&lt;';
+      else if (ch2==='>') html+='&gt;';
+      else html+=ch2;
+    }
+    if (spanOpen) html+='</span>';
+    lines.push(html);
+  }
+  return lines.join('\n');
+}
+
+function exportHTML() {
+  const content = buildHtml(sparseMap);
+  const fname = lastFile ? lastFile.name.replace(/\.[^.]+$/,'') : 'untitled';
+  const fs = Math.round(fontScale*16)+'px';
+  const centered = isCentered ? 'display:flex;justify-content:center' : '';
+  const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title>
+<style>*{margin:0;padding:0}body{background:#000;padding:20px}
+#w{${centered}}#s{display:inline-block;font-family:"Courier New",monospace;font-size:${fs};line-height:1;white-space:pre;color:#aaaaaa}
+</style></head><body><div id="w"><div id="s">${content}</div></div></body></html>`],
+    {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname + '.html';
+  a.click();
+}
+
+// ── Export ANS ────────────────────────────────────────────────────────────────
+function exportANS() {
+  if (sparseMap.size === 0) return;
+  const { maxRow } = getBounds(sparseMap);
+  const rowMaxCol = new Array(maxRow+1).fill(-1);
+  for (const k of sparseMap.keys()) {
+    const r=Math.floor(k/100000), c=k%100000;
+    if (c>rowMaxCol[r]) rowMaxCol[r]=c;
+  }
+  const bytes = [];
+  function pushStr(s) { for (let i=0;i<s.length;i++) bytes.push(s.charCodeAt(i)); }
+  function emitColor(fg,bg) {
+    const bold=fg>=8, base=bold?fg-8:fg;
+    const parts=['0'];
+    if (bold) parts.push('1');
+    parts.push(String(30+base));
+    if (bg>=0 && bg<8)  parts.push(String(40+bg));
+    if (bg>=8)          parts.push(String(100+(bg-8)));
+    pushStr('\x1b['+parts.join(';')+'m');
+  }
+  let curFg=7, curBg=-1;
+  emitColor(7,-1);
+  for (let r=0;r<=maxRow;r++) {
+    const lastC=rowMaxCol[r];
+    if (lastC<0) { pushStr('\r\n'); continue; }
+    for (let c=0;c<=lastC;c++) {
+      const cell=sparseMap.get(r*100000+c);
+      const fg=cell?cell.fg:7, bg=cell?cell.bg:-1, ch2=cell?cell.ch:' ';
+      if (fg!==curFg||bg!==curBg) { emitColor(fg,bg); curFg=fg; curBg=bg; }
+      bytes.push(CP437_REV.get(ch2.codePointAt(0)) ?? 0x20);
+    }
+    if (r<maxRow) pushStr('\r\n');
+  }
+  const fname = lastFile ? lastFile.name.replace(/\.[^.]+$/,'') : 'untitled';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([new Uint8Array(bytes)],{type:'application/octet-stream'}));
+  a.download = fname + '.ans';
+  a.click();
+}
+
+// ── Image → ANSI ─────────────────────────────────────────────────────────────
+let imgSrc = null;
+
+document.getElementById('img-input').addEventListener('change', function () {
+  if (!this.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      imgSrc = img;
+      imgAutoRows();
+      // Show tiny preview
+      const prev = document.getElementById('img-preview-wrap');
+      prev.innerHTML = '';
+      const thumb = document.createElement('canvas');
+      const scale = Math.min(240 / img.width, 80 / img.height, 1);
+      thumb.width  = Math.round(img.width  * scale);
+      thumb.height = Math.round(img.height * scale);
+      thumb.id = 'img-preview';
+      thumb.getContext('2d').drawImage(img, 0, 0, thumb.width, thumb.height);
+      prev.appendChild(thumb);
+      showImgDlg();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(this.files[0]);
+  this.value = '';
+});
+
+function imgAutoRows() {
+  if (!imgSrc) return;
+  if (!document.getElementById('img-aspect').checked) return;
+  const cols = parseInt(document.getElementById('img-cols').value, 10) || 80;
+  const half = document.getElementById('img-half').checked;
+  const aspect = imgSrc.width / imgSrc.height;
+  // char cell is CHAR_W × CHAR_H; half-block = CHAR_W × (CHAR_H/2) effective pixel
+  const charAspect = half ? CHAR_W / (CHAR_H / 2) : CHAR_W / CHAR_H;
+  const rows = Math.max(1, Math.round(cols / aspect / charAspect));
+  document.getElementById('img-rows').value = rows;
+}
+
+function showImgDlg() {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('img-dlg').classList.add('visible');
+}
+function hideImgDlg() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('img-dlg').classList.remove('visible');
+}
+
+function doImgConvert() {
+  if (!imgSrc) return;
+  const cols   = parseInt(document.getElementById('img-cols').value,   10) || 80;
+  const rows   = parseInt(document.getElementById('img-rows').value,   10) || 40;
+  const half   = document.getElementById('img-half').checked;
+  const dither = document.getElementById('img-dither').checked;
+  hideImgDlg();
+
+  const srcH = half ? rows * 2 : rows;
+  const off  = document.createElement('canvas');
+  off.width  = cols;
+  off.height = srcH;
+  const oc   = off.getContext('2d');
+  oc.drawImage(imgSrc, 0, 0, cols, srcH);
+  const raw  = oc.getImageData(0, 0, cols, srcH).data;
+  // Mutable float copy for dithering
+  const pix  = new Float32Array(raw);
+
+  const palRGB = PALETTE.map(h => [
+    parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)
+  ]);
+
+  function nearest(r,g,b) {
+    let best=0, bestD=Infinity;
+    for (let i=0;i<16;i++) {
+      const [pr,pg,pb]=palRGB[i];
+      const d=(r-pr)**2+(g-pg)**2+(b-pb)**2;
+      if (d<bestD) { bestD=d; best=i; }
+    }
+    return best;
+  }
+  function getP(x,y) {
+    const i=(y*cols+x)*4;
+    return [Math.max(0,Math.min(255,pix[i])),Math.max(0,Math.min(255,pix[i+1])),Math.max(0,Math.min(255,pix[i+2]))];
+  }
+  function addErr(x,y,er,eg,eb,f) {
+    if (x<0||x>=cols||y<0||y>=srcH) return;
+    const i=(y*cols+x)*4; pix[i]+=er*f; pix[i+1]+=eg*f; pix[i+2]+=eb*f;
+  }
+
+  pushUndo();
+  sparseMap = new Map();
+
+  for (let row=0; row<rows; row++) {
+    for (let col=0; col<cols; col++) {
+      if (half) {
+        const [r1,g1,b1] = getP(col, row*2);
+        const [r2,g2,b2] = getP(col, row*2+1);
+        const fg = nearest(r1,g1,b1);
+        const bg = nearest(r2,g2,b2);
+        if (dither) {
+          const [p1r,p1g,p1b]=palRGB[fg]; const e1r=r1-p1r,e1g=g1-p1g,e1b=b1-p1b;
+          addErr(col+1,row*2,  e1r,e1g,e1b,7/16); addErr(col-1,row*2+1,e1r,e1g,e1b,3/16);
+          addErr(col,  row*2+1,e1r,e1g,e1b,5/16); addErr(col+1,row*2+1,e1r,e1g,e1b,1/16);
+          const [p2r,p2g,p2b]=palRGB[bg];  const e2r=r2-p2r,e2g=g2-p2g,e2b=b2-p2b;
+          addErr(col+1,row*2+2,e2r,e2g,e2b,7/16); addErr(col-1,row*2+3,e2r,e2g,e2b,3/16);
+          addErr(col,  row*2+3,e2r,e2g,e2b,5/16); addErr(col+1,row*2+3,e2r,e2g,e2b,1/16);
+        }
+        sparseMap.set(row*100000+col, { ch:'\u2580', fg, bg }); // ▀
+      } else {
+        const [r,g,b] = getP(col, row);
+        const fg = nearest(r,g,b);
+        if (dither) {
+          const [pr,pg,pb]=palRGB[fg]; const er=r-pr,eg=g-pg,eb=b-pb;
+          addErr(col+1,row,  er,eg,eb,7/16); addErr(col-1,row+1,er,eg,eb,3/16);
+          addErr(col,  row+1,er,eg,eb,5/16); addErr(col+1,row+1,er,eg,eb,1/16);
+        }
+        sparseMap.set(row*100000+col, { ch:'\u2588', fg, bg:-1 }); // █
+      }
+    }
+  }
+
+  canvasCols = cols; canvasRows = rows;
+  lastFile = null; lastBytes = null;
+  drawAll();
+  showOutput();
+  document.getElementById('filename').textContent = 'image-convert.ans';
+  document.getElementById('s-name').textContent   = 'image-convert.ans';
+  document.getElementById('s-size').textContent   = '—';
+  document.getElementById('s-type').textContent   = 'ANSI color';
+  document.getElementById('s-dims').textContent   = `${cols}×${rows}`;
+  tabs[activeTab].name = 'image-convert.ans';
+  renderTabs();
+  if (!editMode) toggleEdit();
+}
+
+// ── Drop / file events ────────────────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
+dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)processFile(f)});
+document.getElementById('file-input').addEventListener('change', function(){if(this.files[0])processFile(this.files[0])});
+document.addEventListener('dragover', e=>e.preventDefault());
+document.addEventListener('drop', e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)processFile(f)});
+</script>
+</body>
+</html>
