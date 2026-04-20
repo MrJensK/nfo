@@ -56,7 +56,7 @@
   #editbar.visible{display:flex}
   .eb-label{color:var(--dim2);font-size:10px;letter-spacing:1px;-webkit-user-select:none;user-select:none;white-space:nowrap}
   .eb-sep{width:1px;height:16px;background:var(--dim);flex-shrink:0}
-  .csw{width:14px;height:14px;display:inline-block;cursor:pointer;border:1px solid #333;flex-shrink:0;transition:transform .1s,border-color .1s;position:relative}
+  .csw{width:16px;height:16px;display:inline-block;cursor:pointer;border:1px solid #333;flex-shrink:0;transition:transform .1s,border-color .1s;position:relative}
   .csw:hover{border-color:var(--cyan);transform:scale(1.3);z-index:1}
   .csw.sel{border:2px solid #fff !important}
   .eb-btn{background:none;border:1px solid var(--dim);color:var(--dim2);font-family:inherit;font-size:10px;padding:2px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;white-space:nowrap}
@@ -72,6 +72,13 @@
   #canvas-bg-picker.visible{display:block}
   #cbp-grid{display:grid;grid-template-columns:repeat(8,18px);gap:2px}
   #canvas-bg-swatch{width:22px;height:22px;border:1px solid var(--cyan-dk);cursor:pointer;flex-shrink:0}
+  #screen.eyedropper{cursor:crosshair !important}
+  #export-wrap{position:relative;display:none}
+  #export-wrap.visible{display:inline-block}
+  #export-menu{display:none;position:absolute;top:calc(100% + 2px);left:0;background:#000;border:1px solid var(--cyan-dk);z-index:200;flex-direction:column;min-width:100%}
+  #export-menu.visible{display:flex}
+  #export-menu .tb-btn{border:none;border-bottom:1px solid var(--border);text-align:left;width:100%;padding:4px 12px}
+  #export-menu .tb-btn:last-child{border-bottom:none}
   #canvas-bg-swatch:hover{border-color:var(--cyan)}
   /* Tab bar */
   #tabbar{position:sticky;top:0;z-index:95;background:#000;border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;flex-shrink:0}
@@ -145,8 +152,14 @@
       <option value="0">auto</option>
     </select>
   </div>
-  <button type="button" id="export-btn" class="tb-btn dim hidden" onclick="exportHTML()" title="Ctrl+Shift+S">[ EXPORT HTML ]</button>
-  <button type="button" id="exportans-btn" class="tb-btn dim hidden" onclick="exportANS()" title="Ctrl+S">[ EXPORT ANS ]</button>
+  <div id="export-wrap">
+    <button type="button" id="export-btn" class="tb-btn dim" onclick="toggleExportMenu()">[ EXPORT ▾ ]</button>
+    <div id="export-menu">
+      <button type="button" class="tb-btn dim" onclick="exportANS();hideExportMenu()">[ .ANS ]</button>
+      <button type="button" class="tb-btn dim" onclick="exportNFO();hideExportMenu()">[ .NFO plain ]</button>
+      <button type="button" class="tb-btn dim" onclick="exportHTML();hideExportMenu()">[ .HTML ]</button>
+    </div>
+  </div>
   <button type="button" id="edit-btn" class="tb-btn dim hidden" onclick="toggleEdit()" title="Esc (exit edit)">[ EDIT ]</button>
   <button type="button" class="tb-btn dim" onclick="showHelp()" title="?">[ ? ]</button>
 </div>
@@ -209,6 +222,7 @@
   <button type="button" class="eb-btn active" id="mode-text-btn" onclick="setMode('text')" title="Tab">[ TEXT ]</button>
   <button type="button" class="eb-btn" id="mode-draw-btn" onclick="setMode('draw')" title="Tab">[ DRAW ]</button>
   <button type="button" class="eb-btn" id="mode-sel-btn" onclick="setMode('select')" title="Markera område">[ SEL ]</button>
+  <button type="button" class="eb-btn" id="pick-btn" onclick="toggleEyedropper()" title="Högerklick på canvas plockar också färg">[ PICK ]</button>
   <div class="eb-sep"></div>
   <div id="color-preview" title="Aktiv FG/BG">
     <div id="cp-bg-box"></div>
@@ -332,6 +346,7 @@ const PALETTE = [
 // ── Data model ───────────────────────────────────────────────────────────────
 let sparseMap = new Map();
 let lastBytes = null, lastFile = null;
+let _saveTimer = null;
 let canvasCols = 80, canvasRows = 25;
 let canvasBg = '#000000';
 
@@ -353,6 +368,12 @@ let curRow = 0, curCol = 0;
 let activeFg = 7, activeBg = -1;
 let activeChar = '\u2588';
 let isPainting = false, isCentered = false;
+let eyedropperActive = false;
+let isErasing = false;
+let isMoving = false;
+let moveOffsetR = 0, moveOffsetC = 0;
+let moveSelCells = null;
+let moveOrigR1 = 0, moveOrigC1 = 0, moveOrigR2 = 0, moveOrigC2 = 0;
 let undoStack = [], redoStack = [];
 let selActive = false, selDragging = false;
 let selR1 = 0, selC1 = 0, selR2 = 0, selC2 = 0;
@@ -417,6 +438,21 @@ function drawAll() {
     ctx.fillText(cell.ch, x, y);
   }
   drawSelection();
+  if (isMoving && moveSelCells) {
+    const dstR = Math.min(selR1, selR2), dstC = Math.min(selC1, selC2);
+    ctx.fillStyle = canvasBg;
+    ctx.fillRect(moveOrigC1 * cw(), moveOrigR1 * ch(),
+      (moveOrigC2 - moveOrigC1 + 1) * cw(), (moveOrigR2 - moveOrigR1 + 1) * ch());
+    ctx.font = `${fontScale * CHAR_H}px "IBM VGA 8x16"`;
+    ctx.textBaseline = 'top';
+    for (const [key, cell] of moveSelCells) {
+      const dr = Math.floor(key / 100000), dc = key % 100000;
+      const x = (dstC + dc) * cw(), y = (dstR + dr) * ch();
+      if (cell.bg >= 0) { ctx.fillStyle = PALETTE[cell.bg]; ctx.fillRect(x, y, cw(), ch()); }
+      ctx.fillStyle = PALETTE[cell.fg] || PALETTE[7];
+      ctx.fillText(cell.ch, x, y);
+    }
+  }
   updateCursor();
 }
 
@@ -545,8 +581,7 @@ function rerender() {
 function showOutput() {
   document.getElementById('output-wrap').classList.add('visible');
   document.getElementById('dropzone').style.display = 'none';
-  document.getElementById('export-btn').classList.remove('hidden');
-  document.getElementById('exportans-btn').classList.remove('hidden');
+  document.getElementById('export-wrap').classList.add('visible');
   document.getElementById('edit-btn').classList.remove('hidden');
 }
 
@@ -573,17 +608,36 @@ function toggleEdit() {
     sb.style.bottom = '';
     document.getElementById('cursor-el').style.display = 'none';
     hideCharPicker();
+    eyedropperActive = false;
+    canvas.classList.remove('eyedropper');
+    document.getElementById('pick-btn').classList.remove('active');
   }
 }
 
 function setMode(m) {
   drawMode = m;
+  eyedropperActive = false;
+  canvas.classList.remove('eyedropper');
+  document.getElementById('pick-btn').classList.remove('active');
   document.getElementById('mode-text-btn').classList.toggle('active', m === 'text');
   document.getElementById('mode-draw-btn').classList.toggle('active', m === 'draw');
   document.getElementById('mode-sel-btn').classList.toggle('active', m === 'select');
   canvas.style.cursor = (m === 'draw' || m === 'select') ? 'crosshair' : 'text';
   if (m !== 'select') { selActive = false; if (ctx) drawAll(); }
   updateCursor();
+}
+
+function toggleEyedropper() {
+  eyedropperActive = !eyedropperActive;
+  canvas.classList.toggle('eyedropper', eyedropperActive);
+  document.getElementById('pick-btn').classList.toggle('active', eyedropperActive);
+}
+
+function pickColorAt(row, col) {
+  const cell = sparseMap.get(row * 100000 + col);
+  if (!cell) return;
+  setActiveFg(cell.fg);
+  if (cell.bg >= 0) setActiveBg(cell.bg);
 }
 
 // ── Color swatches ────────────────────────────────────────────────────────────
@@ -719,15 +773,60 @@ function cellFromEvent(e) {
   };
 }
 
+function eraseCell(row, col) {
+  const key = row * 100000 + col;
+  if (!sparseMap.has(key)) return;
+  sparseMap.delete(key);
+  drawCell(row, col, null);
+}
+
+canvas.addEventListener('contextmenu', e => {
+  if (!editMode) return;
+  e.preventDefault();
+});
+
 canvas.addEventListener('mousedown', e => {
   if (!editMode) return;
   e.preventDefault();
   canvas.focus();
   const { row, col } = cellFromEvent(e);
   curRow = row; curCol = col;
+  if (e.button === 2) {
+    if (drawMode === 'draw') {
+      pushUndo();
+      isErasing = true;
+      eraseCell(row, col);
+    } else {
+      pickColorAt(row, col);
+    }
+    return;
+  }
+  if (eyedropperActive) {
+    pickColorAt(row, col);
+    eyedropperActive = false;
+    canvas.classList.remove('eyedropper');
+    document.getElementById('pick-btn').classList.remove('active');
+    return;
+  }
   if (drawMode === 'select') {
-    selActive = true; selDragging = true;
-    selR1 = selR2 = row; selC1 = selC2 = col;
+    if (selActive) {
+      const r1=Math.min(selR1,selR2),r2=Math.max(selR1,selR2);
+      const c1=Math.min(selC1,selC2),c2=Math.max(selC1,selC2);
+      if (row>=r1&&row<=r2&&col>=c1&&col<=c2) {
+        pushUndo();
+        isMoving=true;
+        moveOrigR1=r1; moveOrigR2=r2; moveOrigC1=c1; moveOrigC2=c2;
+        moveOffsetR=row-r1; moveOffsetC=col-c1;
+        moveSelCells=new Map();
+        for (let r=r1;r<=r2;r++) for (let c=c1;c<=c2;c++) {
+          const cell=sparseMap.get(r*100000+c);
+          if (cell) moveSelCells.set((r-r1)*100000+(c-c1),{...cell});
+        }
+        return;
+      }
+    }
+    selActive=true; selDragging=true;
+    selR1=selR2=row; selC1=selC2=col;
     drawAll();
   } else if (drawMode === 'draw') {
     pushUndo();
@@ -741,15 +840,36 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
   if (!editMode) return;
   const { row, col } = cellFromEvent(e);
+  if (isMoving) {
+    const h=moveOrigR2-moveOrigR1, w=moveOrigC2-moveOrigC1;
+    selR1=row-moveOffsetR; selR2=selR1+h;
+    selC1=col-moveOffsetC; selC2=selC1+w;
+    drawAll(); return;
+  }
   if (drawMode === 'select' && selDragging) {
     selR2 = row; selC2 = col; drawAll(); return;
   }
+  if (isErasing && drawMode === 'draw') { eraseCell(row, col); return; }
   if (!isPainting || drawMode !== 'draw') return;
   paintCell(row, col);
 });
 
-canvas.addEventListener('mouseup',    () => { isPainting = false; selDragging = false; });
-canvas.addEventListener('mouseleave', () => { isPainting = false; selDragging = false; });
+function commitMove() {
+  if (!isMoving) return;
+  isMoving = false;
+  const dstR=Math.min(selR1,selR2), dstC=Math.min(selC1,selC2);
+  for (let r=moveOrigR1;r<=moveOrigR2;r++)
+    for (let c=moveOrigC1;c<=moveOrigC2;c++)
+      sparseMap.delete(r*100000+c);
+  for (const [key,cell] of moveSelCells) {
+    const dr=Math.floor(key/100000), dc=key%100000;
+    sparseMap.set((dstR+dr)*100000+(dstC+dc),{...cell});
+  }
+  moveSelCells=null;
+  drawAll();
+}
+canvas.addEventListener('mouseup',    () => { commitMove(); isPainting = false; selDragging = false; isErasing = false; });
+canvas.addEventListener('mouseleave', () => { commitMove(); isPainting = false; selDragging = false; isErasing = false; });
 
 function paintCell(row, col) {
   const key = row * 100000 + col;
@@ -985,8 +1105,7 @@ function switchTab(idx) {
   } else {
     document.getElementById('output-wrap').classList.remove('visible');
     document.getElementById('dropzone').style.display = '';
-    document.getElementById('export-btn').classList.add('hidden');
-    document.getElementById('exportans-btn').classList.add('hidden');
+    document.getElementById('export-wrap').classList.remove('visible');
     document.getElementById('edit-btn').classList.add('hidden');
     document.getElementById('filename').textContent = 'drop .nfo / .ans anywhere';
     document.getElementById('width-wrap').classList.remove('visible');
@@ -1006,8 +1125,7 @@ function addTab() {
   document.getElementById('output-wrap').classList.remove('centered','visible');
   document.getElementById('center-btn').classList.remove('active');
   document.getElementById('dropzone').style.display = '';
-  document.getElementById('export-btn').classList.add('hidden');
-  document.getElementById('exportans-btn').classList.add('hidden');
+  document.getElementById('export-wrap').classList.remove('visible');
   document.getElementById('edit-btn').classList.add('hidden');
   document.getElementById('filename').textContent = 'drop .nfo / .ans anywhere';
   document.getElementById('width-wrap').classList.remove('visible');
@@ -1167,6 +1285,44 @@ function exportHTML() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = fname + '.html';
+  a.click();
+}
+
+// ── Export menu ───────────────────────────────────────────────────────────────
+function toggleExportMenu() {
+  document.getElementById('export-menu').classList.toggle('visible');
+}
+function hideExportMenu() {
+  document.getElementById('export-menu').classList.remove('visible');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('export-wrap').contains(e.target))
+    hideExportMenu();
+});
+
+// ── Export NFO (plain text, no ANSI) ─────────────────────────────────────────
+function exportNFO() {
+  if (sparseMap.size === 0) return;
+  const { maxRow } = getBounds(sparseMap);
+  const rowMaxCol = new Array(maxRow + 1).fill(-1);
+  for (const k of sparseMap.keys()) {
+    const r = Math.floor(k / 100000), c = k % 100000;
+    if (c > rowMaxCol[r]) rowMaxCol[r] = c;
+  }
+  const bytes = [];
+  for (let r = 0; r <= maxRow; r++) {
+    const lastC = rowMaxCol[r];
+    if (lastC < 0) { bytes.push(0x0d, 0x0a); continue; }
+    for (let c = 0; c <= lastC; c++) {
+      const cell = sparseMap.get(r * 100000 + c);
+      bytes.push(CP437_REV.get((cell ? cell.ch : ' ').codePointAt(0)) ?? 0x20);
+    }
+    if (r < maxRow) bytes.push(0x0d, 0x0a);
+  }
+  const fname = lastFile ? lastFile.name.replace(/\.[^.]+$/, '') : 'untitled';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([new Uint8Array(bytes)], {type: 'application/octet-stream'}));
+  a.download = fname + '.nfo';
   a.click();
 }
 
@@ -1358,7 +1514,6 @@ function b64ToU8(s) {
   return a;
 }
 
-let _saveTimer = null;
 function scheduleSessionSave() {
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(saveSession, 1000);
