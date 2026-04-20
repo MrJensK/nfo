@@ -697,6 +697,7 @@ function setCanvasBg(color) {
   document.getElementById('canvas-bg-swatch').style.background = color;
   hideCanvasBgPicker();
   if (ctx) drawAll();
+  scheduleSessionSave();
 }
 document.addEventListener('click', e => {
   if (!document.getElementById('canvas-bg-picker').contains(e.target) &&
@@ -866,6 +867,7 @@ function pushUndo() {
   undoStack.push(cloneMap(sparseMap));
   if (undoStack.length > 50) undoStack.shift();
   redoStack = [];
+  scheduleSessionSave();
 }
 function undo() {
   if (!undoStack.length) return;
@@ -959,6 +961,7 @@ function renderTabs() {
   add.dataset.tabAdd = '1';
   bar.appendChild(add);
   bar.style.top = document.getElementById('topbar').offsetHeight + 'px';
+  scheduleSessionSave();
 }
 function switchTab(idx) {
   if (idx === activeTab) return;
@@ -1104,6 +1107,7 @@ function toggleCenter() {
   isCentered = !isCentered;
   document.getElementById('output-wrap').classList.toggle('centered', isCentered);
   document.getElementById('center-btn').classList.toggle('active', isCentered);
+  scheduleSessionSave();
 }
 function adjFont(delta) {
   const steps = [0.5,0.75,1,1.25,1.5,2,2.5,3];
@@ -1342,6 +1346,95 @@ function doImgConvert() {
   if (!editMode) toggleEdit();
 }
 
+// ── Session persistence ───────────────────────────────────────────────────────
+function u8ToB64(arr) {
+  let s = '';
+  for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+  return btoa(s);
+}
+function b64ToU8(s) {
+  const b = atob(s), a = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+  return a;
+}
+
+let _saveTimer = null;
+function scheduleSessionSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveSession, 1000);
+}
+
+function saveSession() {
+  saveCurrentTab();
+  try {
+    const data = {
+      activeTab,
+      tabs: tabs.map(t => ({
+        name: t.name,
+        sparseMap: [...t.sparseMap.entries()],
+        lastBytes: t.lastBytes ? u8ToB64(t.lastBytes) : null,
+        canvasCols: t.canvasCols,
+        canvasRows: t.canvasRows,
+        canvasBg: t.canvasBg,
+        isCentered: t.isCentered,
+      }))
+    };
+    localStorage.setItem('nfoed_session', JSON.stringify(data));
+  } catch(e) {
+    console.warn('Session save failed:', e);
+  }
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem('nfoed_session');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.tabs || !data.tabs.length) return false;
+    tabs = data.tabs.map(t => ({
+      name: t.name,
+      sparseMap: new Map(t.sparseMap),
+      lastFile: null,
+      lastBytes: t.lastBytes ? b64ToU8(t.lastBytes) : null,
+      canvasCols: t.canvasCols || 80,
+      canvasRows: t.canvasRows || 25,
+      canvasBg: t.canvasBg || '#000000',
+      isCentered: t.isCentered || false,
+      undoStack: [],
+      redoStack: [],
+    }));
+    activeTab = Math.min(data.activeTab || 0, tabs.length - 1);
+    const t = tabs[activeTab];
+    sparseMap = t.sparseMap;
+    lastFile = null;
+    lastBytes = t.lastBytes;
+    canvasCols = t.canvasCols;
+    canvasRows = t.canvasRows;
+    canvasBg = t.canvasBg;
+    isCentered = t.isCentered;
+    undoStack = []; redoStack = [];
+    document.getElementById('canvas-bg-swatch').style.background = canvasBg;
+    document.getElementById('output-wrap').classList.toggle('centered', isCentered);
+    document.getElementById('center-btn').classList.toggle('active', isCentered);
+    if (sparseMap.size > 0) {
+      showOutput();
+      document.getElementById('filename').textContent = t.name;
+      document.getElementById('s-name').textContent = t.name;
+      document.getElementById('width-wrap').classList.add('visible');
+      const { maxRow, maxCol } = getBounds(sparseMap);
+      document.getElementById('s-dims').textContent = `${maxCol+1}×${maxRow+1}`;
+      document.getElementById('s-type').textContent = lastBytes ? 'restored' : 'new';
+      document.getElementById('s-size').textContent = lastBytes ? fmt(lastBytes.length) : '—';
+      document.fonts.ready.then(() => drawAll());
+    }
+    renderTabs();
+    return true;
+  } catch(e) {
+    console.warn('Session load failed:', e);
+    return false;
+  }
+}
+
 // ── Tab bar delegation ────────────────────────────────────────────────────────
 document.getElementById('tabbar').addEventListener('click', e => {
   const closeBtn = e.target.closest('[data-close-idx]');
@@ -1359,6 +1452,8 @@ dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');c
 document.getElementById('file-input').addEventListener('change', function(){if(this.files[0])processFile(this.files[0])});
 document.addEventListener('dragover', e=>e.preventDefault());
 document.addEventListener('drop', e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)processFile(f)});
+
+loadSession();
 </script>
 </body>
 </html>
