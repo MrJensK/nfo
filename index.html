@@ -1341,6 +1341,15 @@ function doImgConvert() {
   if (!editMode) toggleEdit();
 }
 
+// ── Tab bar delegation ────────────────────────────────────────────────────────
+document.getElementById('tabbar').addEventListener('click', e => {
+  const closeBtn = e.target.closest('[data-close-idx]');
+  if (closeBtn) { e.stopPropagation(); closeTab(parseInt(closeBtn.dataset.closeIdx)); return; }
+  if (e.target.closest('[data-tab-add]')) { addTab(); return; }
+  const tabBtn = e.target.closest('[data-tab-idx]');
+  if (tabBtn) switchTab(parseInt(tabBtn.dataset.tabIdx));
+});
+
 // ── Drop / file events ────────────────────────────────────────────────────────
 const dz = document.getElementById('dropzone');
 dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over')});
