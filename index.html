@@ -62,7 +62,7 @@
   .eb-btn{background:none;border:1px solid var(--dim);color:var(--dim2);font-family:inherit;font-size:10px;padding:2px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;white-space:nowrap}
   .eb-btn:hover{border-color:var(--cyan-dk);color:var(--cyan)}
   .eb-btn.active{border-color:var(--cyan);color:var(--cyan)}
-  .swatch-row{display:flex;gap:2px}
+
   #active-char-wrap{display:flex;align-items:center;gap:4px;cursor:pointer}
   #active-char-box{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--cyan-dk);font-family:'IBM VGA 8x16',monospace;font-size:16px;line-height:1;background:#000;color:#fff}
   #active-char-wrap:hover #active-char-box{border-color:var(--cyan)}
@@ -70,9 +70,15 @@
   #charpicker.visible{display:block}
   #canvas-bg-picker{display:none;position:fixed;z-index:200;background:#000;border:1px solid var(--cyan-dk);padding:6px;box-shadow:0 0 20px rgba(0,0,0,.9)}
   #canvas-bg-picker.visible{display:block}
-  #cbp-grid{display:grid;grid-template-columns:repeat(8,18px);gap:2px}
+  #cbp-grid{display:grid;grid-template-columns:repeat(8,22px);gap:2px}
   #canvas-bg-swatch{width:22px;height:22px;border:1px solid var(--cyan-dk);cursor:pointer;flex-shrink:0}
   #screen.eyedropper{cursor:crosshair !important}
+  #new-wrap{position:relative;display:inline-block}
+  #new-menu{display:none;position:absolute;top:calc(100% + 2px);left:0;background:#000;border:1px solid var(--cyan-dk);z-index:200;flex-direction:column;min-width:100%;white-space:nowrap}
+  #new-menu.visible{display:flex}
+  #new-menu .tb-btn{border:none;border-bottom:1px solid var(--border);text-align:left;width:100%;padding:4px 12px}
+  #new-menu .tb-btn:last-child{border-bottom:none}
+  #na-text{width:100%;height:130px;background:#000;border:1px solid var(--border);color:#aaa;font-family:'Share Tech Mono','Courier New',monospace;font-size:11px;padding:5px;resize:vertical;box-sizing:border-box;margin:8px 0}
   #export-wrap{position:relative;display:none}
   #export-wrap.visible{display:inline-block}
   #export-menu{display:none;position:absolute;top:calc(100% + 2px);left:0;background:#000;border:1px solid var(--cyan-dk);z-index:200;flex-direction:column;min-width:100%}
@@ -93,9 +99,9 @@
   .cpc{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-family:'IBM VGA 8x16',monospace;font-size:13px;line-height:1;cursor:pointer;color:#aaa;border:1px solid transparent;-webkit-user-select:none;user-select:none}
   .cpc:hover{background:var(--cyan-dk);color:#fff}
   .cpc.sel{border-color:var(--cyan);color:var(--cyan)}
-  #new-dlg{display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:1px solid var(--cyan-dk);padding:24px;min-width:260px}
-  #new-dlg.visible{display:block}
-  #new-dlg h3{color:var(--cyan);font-size:11px;letter-spacing:2px;margin-bottom:16px}
+  #new-dlg,#new-ansi-dlg{display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:1px solid var(--cyan-dk);padding:24px;min-width:260px}
+  #new-dlg.visible,#new-ansi-dlg.visible{display:block}
+  #new-dlg h3,#new-ansi-dlg h3{color:var(--cyan);font-size:11px;letter-spacing:2px;margin-bottom:16px}
   .dlg-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .dlg-row label{color:var(--dim2);font-size:11px;width:70px}
   .dlg-row input{background:#000;border:1px solid var(--dim);color:var(--cyan);font-family:inherit;font-size:11px;padding:3px 8px;width:90px}
@@ -119,10 +125,23 @@
   #os-toggle{display:flex;border:1px solid var(--cyan-dk);font-size:10px}
   .os-btn{background:none;color:var(--dim2);border:none;padding:3px 10px;font-family:inherit;cursor:pointer;letter-spacing:1px}
   .os-btn.active{background:var(--cyan-dk);color:#fff}
-  /* Active color preview */
-  #color-preview{position:relative;width:30px;height:24px;flex-shrink:0;cursor:default}
-  #cp-bg-box{position:absolute;bottom:0;right:0;width:18px;height:18px;border:1px solid #444}
-  #cp-fg-box{position:absolute;top:0;left:0;width:18px;height:18px;border:1px solid #aaa;box-shadow:0 0 0 1px #000}
+  .color-btn{width:28px;height:18px;cursor:pointer;border:1px solid var(--cyan-dk);flex-shrink:0;transition:border-color .1s}
+  .color-btn:hover{border-color:var(--cyan)}
+  #color256-picker{display:none;position:fixed;z-index:200;background:#0a0a0a;border:1px solid var(--cyan-dk);padding:8px;box-shadow:0 0 24px rgba(0,0,0,.95)}
+  #color256-picker.visible{display:block}
+  #c256-title{color:var(--cyan);font-size:10px;letter-spacing:2px;margin-bottom:5px}
+  .c256-lbl{color:var(--dim2);font-size:9px;letter-spacing:1px;margin:5px 0 2px}
+  #c256-sys-grid{display:grid;grid-template-columns:repeat(16,16px);gap:1px;margin-bottom:4px}
+  #c256-cube-grid{display:flex;gap:4px;margin-bottom:4px}
+  .c256-plane{display:grid;grid-template-columns:repeat(6,9px);gap:1px}
+  #c256-gray-grid{display:grid;grid-template-columns:repeat(24,12px);gap:1px}
+  .c256c{cursor:pointer;border:1px solid transparent;box-sizing:border-box;position:relative}
+  .c256c:hover{border-color:#fff;transform:scale(1.3);z-index:1}
+  .c256c.sel{border:2px solid #fff !important}
+  #c256-transp{display:none;margin-top:6px}
+  #c256-transp-btn{color:var(--dim2);font-size:10px;cursor:pointer;border:1px solid var(--dim);padding:2px 10px;letter-spacing:1px;display:inline-block}
+  #c256-transp-btn:hover{color:var(--cyan);border-color:var(--cyan-dk)}
+  #c256-transp-btn.sel{color:var(--cyan);border-color:var(--cyan)}
   /* Image convert dialog */
   #img-dlg{display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:1px solid var(--cyan-dk);padding:24px;min-width:280px}
   #img-dlg.visible{display:block}
@@ -138,9 +157,16 @@
 
 <div id="topbar">
   <div class="logo">NFO<em>::</em>ANS<em>::</em>EDITOR</div>
-  <button type="button" class="tb-btn" onclick="document.getElementById('file-input').click()" title="Ctrl+O">[ OPEN ]</button>
-  <button type="button" class="tb-btn dim" onclick="showNewDlg()" title="Ctrl+N">[ NEW ]</button>
-  <button type="button" class="tb-btn dim" onclick="document.getElementById('img-input').click()" title="Konvertera bild till ANSI">[ BILD→ANS ]</button>
+  <button type="button" class="tb-btn" onclick="openWithPicker()" title="Ctrl+O">[ OPEN ]</button>
+  <div id="new-wrap">
+    <button type="button" class="tb-btn dim" onclick="toggleNewMenu()" title="Ctrl+N">[ NEW ▾ ]</button>
+    <div id="new-menu">
+      <button type="button" class="tb-btn dim" onclick="showNewDlg();hideNewMenu()">[ EMPTY ]</button>
+      <button type="button" class="tb-btn dim" onclick="newFromClipboard()">[ FROM CLIPBOARD ]</button>
+      <button type="button" class="tb-btn dim" onclick="showNewAnsiDlg();hideNewMenu()">[ FROM ANSI CODE ]</button>
+    </div>
+  </div>
+  <button type="button" class="tb-btn dim" onclick="document.getElementById('img-input').click()" title="Konvertera bild till ANSI">[ IMAGE → ANS ]</button>
   <input type="file" id="file-input" accept=".nfo,.ans,.txt,.diz,.asc,.ansi">
   <input type="file" id="img-input" accept="image/*" title="Välj bild att konvertera till ANSI">
   <div id="filename">drop .nfo / .ans anywhere</div>
@@ -152,6 +178,7 @@
       <option value="0">auto</option>
     </select>
   </div>
+  <button type="button" id="save-btn" class="tb-btn dim" onclick="saveANS()" title="Ctrl+S">[ SAVE ]</button>
   <div id="export-wrap">
     <button type="button" id="export-btn" class="tb-btn dim" onclick="toggleExportMenu()">[ EXPORT ▾ ]</button>
     <div id="export-menu">
@@ -208,6 +235,13 @@
     </div>
 
     <div class="help-section">
+      <h3>MARKERING &amp; KLIPPBORD</h3>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>C</kbd></span><span class="help-desc">Kopiera markering (till app + systemklippbord)</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>X</kbd></span><span class="help-desc">Klipp ut markering</span></div>
+      <div class="help-row"><span class="help-key"><kbd>Ctrl</kbd> + <kbd>V</kbd></span><span class="help-desc">Klistra in — även extern ASCII-art från systemklippbord</span></div>
+    </div>
+
+    <div class="help-section">
       <h3>DRAW-LÄGE</h3>
       <div class="help-row"><span class="help-key">Klick</span><span class="help-desc">Måla cell med aktivt tecken</span></div>
       <div class="help-row"><span class="help-key">Klick + drag</span><span class="help-desc">Måla längs drag</span></div>
@@ -224,21 +258,16 @@
   <button type="button" class="eb-btn" id="mode-sel-btn" onclick="setMode('select')" title="Markera område">[ SEL ]</button>
   <button type="button" class="eb-btn" id="pick-btn" onclick="toggleEyedropper()" title="Högerklick på canvas plockar också färg">[ PICK ]</button>
   <div class="eb-sep"></div>
-  <div id="color-preview" title="Aktiv FG/BG">
-    <div id="cp-bg-box"></div>
-    <div id="cp-fg-box"></div>
-  </div>
-  <div class="eb-sep"></div>
   <div id="active-char-wrap" onclick="toggleCharPicker(event)" title="F2 — pick character">
     <span class="eb-label">CHAR:</span>
     <div id="active-char-box">&#x2588;</div>
   </div>
   <div class="eb-sep"></div>
   <span class="eb-label">FG:</span>
-  <div id="fg-swatches" class="swatch-row"></div>
+  <div id="cp-fg-box" class="color-btn" onclick="openColorPicker('fg',event)" title="Teckenfärg (klicka för att byta)"></div>
   <div class="eb-sep"></div>
   <span class="eb-label">BG:</span>
-  <div id="bg-swatches" class="swatch-row"></div>
+  <div id="cp-bg-box" class="color-btn" onclick="openColorPicker('bg',event)" title="Bakgrundsfärg (klicka för att byta)"></div>
   <div class="eb-sep"></div>
   <span class="eb-label">YTA:</span>
   <div id="canvas-bg-swatch" title="Arbetsytans bakgrundsfärg — klicka för att byta" onclick="toggleCanvasBgPicker(event)"></div>
@@ -257,6 +286,16 @@
 
 <div id="charpicker"><div id="cp-grid"></div></div>
 <div id="canvas-bg-picker"><div id="cbp-grid"></div></div>
+<div id="color256-picker">
+  <div id="c256-title">FG</div>
+  <div class="c256-lbl">SYSTEM</div>
+  <div id="c256-sys-grid"></div>
+  <div class="c256-lbl">FÄRGKUB</div>
+  <div id="c256-cube-grid"></div>
+  <div class="c256-lbl">GRÅSKALA</div>
+  <div id="c256-gray-grid"></div>
+  <div id="c256-transp"><span id="c256-transp-btn" onmousedown="event.preventDefault()" onclick="setActiveBg(-1);hideColorPicker()">[ INGEN BG ]</span></div>
+</div>
 
 <div id="overlay" onclick="hideActiveDialog()"></div>
 <div id="new-dlg">
@@ -269,11 +308,22 @@
   </div>
 </div>
 
+<div id="new-ansi-dlg">
+  <h3>NEW FROM ANSI CODE</h3>
+  <div class="dlg-row"><label>Cols</label><input type="number" id="na-cols" value="80" min="20" max="320"></div>
+  <textarea id="na-text" placeholder="Klistra in ANSI-kod (ESC-sekvenser) här..."></textarea>
+  <div class="dlg-btns">
+    <button type="button" class="eb-btn" onclick="hideNewAnsiDlg()">[ CANCEL ]</button>
+    <button class="eb-btn active" onclick="createFromAnsiCode()">[ CREATE ]</button>
+  </div>
+</div>
+
 <div id="img-dlg">
   <h3>BILD → ANSI</h3>
   <div class="dlg-row"><label>Kolonner</label><input type="number" id="img-cols" value="80" min="10" max="320" oninput="imgAutoRows()"></div>
   <div class="dlg-row"><label>Rader</label><input type="number" id="img-rows" value="40" min="5" max="300"></div>
-  <div class="dlg-check"><input type="checkbox" id="img-half" checked><label for="img-half">Halvblock ▀ (dubbel vertikal upplösning)</label></div>
+  <div class="dlg-check"><input type="checkbox" id="img-ascii" onchange="imgAsciiToggle()"><label for="img-ascii">ASCII-tecken  <span id="img-ascii-ramp" style="color:var(--dim2);font-size:10px;letter-spacing:1px"> .:-=+*#%@</span></label></div>
+  <div class="dlg-check" id="img-half-row"><input type="checkbox" id="img-half" checked><label for="img-half">Halvblock ▀ (dubbel vertikal upplösning)</label></div>
   <div class="dlg-check"><input type="checkbox" id="img-dither" checked><label for="img-dither">Dithering (bättre färgövergångar)</label></div>
   <div class="dlg-check"><input type="checkbox" id="img-aspect" checked onchange="imgAutoRows()"><label for="img-aspect">Bevara proportioner</label></div>
   <div id="img-preview-wrap"></div>
@@ -336,12 +386,20 @@ for (let i = 1; i < 256; i++) CP437_REV.set(CP437[i], i);
 CP437_REV.set(0x20, 0x20);
 
 const TRANSP_BG = 'repeating-conic-gradient(#888 0% 25%,#fff 0% 50%) 0/8px 8px';
-const PALETTE = [
-  '#000000','#aa0000','#00aa00','#aa5500',
-  '#0000aa','#aa00aa','#00aaaa','#aaaaaa',
-  '#555555','#ff5555','#55ff55','#ffff55',
-  '#5555ff','#ff55ff','#55ffff','#ffffff'
-];
+const PALETTE = (() => {
+  const h = n => n.toString(16).padStart(2,'0');
+  const p = [
+    '#000000','#aa0000','#00aa00','#aa5500',
+    '#0000aa','#aa00aa','#00aaaa','#aaaaaa',
+    '#555555','#ff5555','#55ff55','#ffff55',
+    '#5555ff','#ff55ff','#55ffff','#ffffff'
+  ];
+  const lvl = [0,95,135,175,215,255];
+  for (let r=0;r<6;r++) for (let g=0;g<6;g++) for (let b=0;b<6;b++)
+    p.push(`#${h(lvl[r])}${h(lvl[g])}${h(lvl[b])}`);
+  for (let i=0;i<24;i++) { const v=8+i*10; p.push(`#${h(v)}${h(v)}${h(v)}`); }
+  return p;
+})();
 
 // ── Data model ───────────────────────────────────────────────────────────────
 let sparseMap = new Map();
@@ -378,11 +436,13 @@ let undoStack = [], redoStack = [];
 let selActive = false, selDragging = false;
 let selR1 = 0, selC1 = 0, selR2 = 0, selC2 = 0;
 let clipboard = null;
+let clipboardText = null;
+let lastFileHandle = null;
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function newTabState() {
   return { name:'untitled', sparseMap:new Map(), lastFile:null, lastBytes:null,
-           canvasCols:80, canvasRows:25, canvasBg:'#000000',
+           lastFileHandle:null, canvasCols:80, canvasRows:25, canvasBg:'#000000',
            undoStack:[], redoStack:[], isCentered:false };
 }
 let tabs = [newTabState()];
@@ -391,6 +451,13 @@ let activeTab = 0;
 updateColorPreview();
 document.getElementById('canvas-bg-swatch').style.background = canvasBg;
 renderTabs();
+if (!window.showOpenFilePicker) {
+  const sb = document.getElementById('save-btn');
+  sb.disabled = true;
+  sb.title = 'Save function only supported by Chrome and Edge at the moment';
+  sb.style.opacity = '0.35';
+  sb.style.cursor = 'not-allowed';
+}
 
 // ── Canvas rendering ─────────────────────────────────────────────────────────
 const canvas = document.getElementById('screen');
@@ -640,35 +707,78 @@ function pickColorAt(row, col) {
   if (cell.bg >= 0) setActiveBg(cell.bg);
 }
 
-// ── Color swatches ────────────────────────────────────────────────────────────
-(function buildSwatches() {
-  const fgDiv = document.getElementById('fg-swatches');
-  const bgDiv = document.getElementById('bg-swatches');
-  PALETTE.forEach((color, i) => {
-    const fs = document.createElement('span');
-    fs.className = 'csw' + (i === activeFg ? ' sel' : '');
-    fs.style.background = color;
-    fs.title = 'FG ' + i;
-    fs.dataset.idx = i;
-    fs.addEventListener('mousedown', e => { e.preventDefault(); setActiveFg(i); });
-    fgDiv.appendChild(fs);
-    const bs = document.createElement('span');
-    bs.className = 'csw';
-    bs.style.background = color;
-    bs.title = 'BG ' + i;
-    bs.dataset.idx = i;
-    bs.addEventListener('mousedown', e => { e.preventDefault(); setActiveBg(i); });
-    bgDiv.appendChild(bs);
-  });
-  // Transparent BG swatch
-  const ns = document.createElement('span');
-  ns.className = 'csw sel';
-  ns.style.background = TRANSP_BG;
-  ns.title = 'BG none';
-  ns.dataset.idx = -1;
-  ns.addEventListener('mousedown', e => { e.preventDefault(); setActiveBg(-1); });
-  bgDiv.appendChild(ns);
+// ── 256-color picker ──────────────────────────────────────────────────────────
+let _colorPickerMode = 'fg';
+
+(function buildColorPicker256() {
+  function makeCell(i, size) {
+    const c = document.createElement('div');
+    c.className = 'c256c';
+    c.style.cssText = `background:${PALETTE[i]};width:${size}px;height:${size}px`;
+    c.title = `#${i}  ${PALETTE[i]}`;
+    c.dataset.idx = i;
+    c.addEventListener('mousedown', e => e.preventDefault());
+    c.addEventListener('click', () => {
+      if (_colorPickerMode === 'fg') setActiveFg(i);
+      else setActiveBg(i);
+      hideColorPicker();
+    });
+    return c;
+  }
+  const sys  = document.getElementById('c256-sys-grid');
+  const cube = document.getElementById('c256-cube-grid');
+  const gray = document.getElementById('c256-gray-grid');
+  for (let i=0; i<16; i++) sys.appendChild(makeCell(i, 16));
+  for (let r=0; r<6; r++) {
+    const plane = document.createElement('div');
+    plane.className = 'c256-plane';
+    for (let g=0; g<6; g++)
+      for (let b=0; b<6; b++)
+        plane.appendChild(makeCell(16 + r*36 + g*6 + b, 9));
+    cube.appendChild(plane);
+  }
+  for (let i=232; i<256; i++) gray.appendChild(makeCell(i, 12));
 })();
+
+function updateColorPicker256Selection() {
+  document.querySelectorAll('.c256c').forEach(c =>
+    c.classList.toggle('sel',
+      _colorPickerMode==='fg' ? +c.dataset.idx===activeFg : +c.dataset.idx===activeBg));
+  const tb = document.getElementById('c256-transp-btn');
+  if (tb) tb.classList.toggle('sel', _colorPickerMode==='bg' && activeBg===-1);
+}
+
+function openColorPicker(mode, e) {
+  e.stopPropagation();
+  const picker = document.getElementById('color256-picker');
+  if (picker.classList.contains('visible') && _colorPickerMode===mode) {
+    hideColorPicker(); return;
+  }
+  _colorPickerMode = mode;
+  document.getElementById('c256-title').textContent = mode === 'fg' ? 'FG — TECKENFÄRG' : 'BG — BAKGRUNDSFÄRG';
+  document.getElementById('c256-transp').style.display = mode === 'bg' ? 'block' : 'none';
+  updateColorPicker256Selection();
+  const ebH = document.getElementById('editbar').offsetHeight;
+  picker.style.bottom = (ebH + 4) + 'px';
+  const btn = mode === 'fg'
+    ? document.getElementById('cp-fg-box')
+    : document.getElementById('cp-bg-box');
+  const rect = btn.getBoundingClientRect();
+  const pickerW = 374 + 16;
+  const left = Math.min(rect.left, window.innerWidth - pickerW - 8);
+  picker.style.left = Math.max(0, left) + 'px';
+  picker.classList.add('visible');
+}
+function hideColorPicker() {
+  document.getElementById('color256-picker').classList.remove('visible');
+}
+document.addEventListener('click', e => {
+  const p = document.getElementById('color256-picker');
+  if (!p.contains(e.target) &&
+      !document.getElementById('cp-fg-box').contains(e.target) &&
+      !document.getElementById('cp-bg-box').contains(e.target))
+    hideColorPicker();
+});
 
 function updateColorPreview() {
   document.getElementById('cp-fg-box').style.background = PALETTE[activeFg];
@@ -677,14 +787,10 @@ function updateColorPreview() {
 }
 function setActiveFg(i) {
   activeFg = i;
-  document.querySelectorAll('#fg-swatches .csw').forEach(s =>
-    s.classList.toggle('sel', +s.dataset.idx === i));
   updateColorPreview();
 }
 function setActiveBg(i) {
   activeBg = i;
-  document.querySelectorAll('#bg-swatches .csw').forEach(s =>
-    s.classList.toggle('sel', +s.dataset.idx === i));
   updateColorPreview();
 }
 
@@ -723,7 +829,7 @@ function hideCharPicker() {
 // ── Canvas background picker ──────────────────────────────────────────────────
 (function buildCanvasBgPicker() {
   const grid = document.getElementById('cbp-grid');
-  PALETTE.forEach((color, i) => {
+  PALETTE.slice(0, 16).forEach((color, i) => {
     const s = document.createElement('div');
     s.className = 'csw';
     s.style.background = color;
@@ -953,6 +1059,8 @@ document.addEventListener('keydown', e => {
     if (document.getElementById('help-overlay').classList.contains('visible')) { hideHelp(); return; }
     if (document.getElementById('img-dlg').classList.contains('visible'))      { hideImgDlg(); return; }
     if (document.getElementById('new-dlg').classList.contains('visible'))      { hideNewDlg(); return; }
+    if (document.getElementById('new-ansi-dlg').classList.contains('visible')) { hideNewAnsiDlg(); return; }
+    hideNewMenu();
   }
   // ⌘+Backspace = Delete, works even when canvas lost focus
   if (e.metaKey && e.key === 'Backspace' && editMode && drawMode === 'text') {
@@ -971,9 +1079,9 @@ document.addEventListener('keydown', e => {
   if (e.key==='c'||e.key==='C') { e.preventDefault(); copySelection(); }
   if (e.key==='x'||e.key==='X') { e.preventDefault(); cutSelection(); }
   if (e.key==='v'||e.key==='V') { e.preventDefault(); pasteClipboard(); }
-  if (e.key==='o'||e.key==='O') { e.preventDefault(); document.getElementById('file-input').click(); }
-  if (e.key==='n'||e.key==='N') { e.preventDefault(); showNewDlg(); }
-  if (e.key==='s'&&!e.shiftKey) { e.preventDefault(); exportANS(); }
+  if (e.key==='o'||e.key==='O') { e.preventDefault(); openWithPicker(); }
+  if (e.key==='n'||e.key==='N') { e.preventDefault(); toggleNewMenu(); }
+  if (e.key==='s'&&!e.shiftKey) { e.preventDefault(); saveANS(); }
   if (e.key==='s'&& e.shiftKey) { e.preventDefault(); exportHTML(); }
 });
 
@@ -1018,12 +1126,19 @@ function copySelection() {
   const r1=Math.min(selR1,selR2), r2=Math.max(selR1,selR2);
   const c1=Math.min(selC1,selC2), c2=Math.max(selC1,selC2);
   const cells = new Map();
-  for (let r=r1; r<=r2; r++)
+  const lines = [];
+  for (let r=r1; r<=r2; r++) {
+    let line = '';
     for (let c=c1; c<=c2; c++) {
       const cell = sparseMap.get(r*100000+c);
-      if (cell) cells.set((r-r1)*100000+(c-c1), {...cell});
+      if (cell) { cells.set((r-r1)*100000+(c-c1), {...cell}); line += cell.ch; }
+      else line += ' ';
     }
+    lines.push(line);
+  }
   clipboard = { cells, rows:r2-r1+1, cols:c2-c1+1 };
+  clipboardText = lines.join('\n');
+  navigator.clipboard.writeText(clipboardText).catch(()=>{});
 }
 function cutSelection() {
   if (!selActive) return;
@@ -1037,14 +1152,41 @@ function cutSelection() {
   selActive = false;
   drawAll();
 }
-function pasteClipboard() {
-  if (!clipboard || !editMode) return;
-  pushUndo();
-  for (const [key, cell] of clipboard.cells) {
-    const dr = Math.floor(key/100000), dc = key%100000;
-    sparseMap.set((curRow+dr)*100000+(curCol+dc), {...cell});
+async function pasteClipboard() {
+  if (!editMode) return;
+  let sysText = null;
+  try { sysText = await navigator.clipboard.readText(); } catch(e) {}
+
+  if (sysText !== null && sysText === clipboardText && clipboard) {
+    // intern kopia matchar systemet → klistra med färger
+    pushUndo();
+    for (const [key, cell] of clipboard.cells) {
+      const dr = Math.floor(key/100000), dc = key%100000;
+      sparseMap.set((curRow+dr)*100000+(curCol+dc), {...cell});
+    }
+    drawAll();
+  } else if (sysText !== null && sysText !== '') {
+    // extern text (t.ex. ASCII-art) → klistra rad för rad
+    pushUndo();
+    const lines = sysText.split('\n');
+    const startCol = curCol;
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li].replace(/\r$/, '');
+      for (let ci = 0; ci < line.length; ci++) {
+        const ch = line[ci];
+        sparseMap.set((curRow+li)*100000+(startCol+ci), { ch, fg: activeFg, bg: activeBg });
+      }
+    }
+    drawAll();
+  } else if (clipboard) {
+    // systemklippbord tomt, använd intern kopia
+    pushUndo();
+    for (const [key, cell] of clipboard.cells) {
+      const dr = Math.floor(key/100000), dc = key%100000;
+      sparseMap.set((curRow+dr)*100000+(curCol+dc), {...cell});
+    }
+    drawAll();
   }
-  drawAll();
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -1052,7 +1194,7 @@ function saveCurrentTab() {
   if (activeTab < 0 || activeTab >= tabs.length) return;
   const t = tabs[activeTab];
   t.name = lastFile ? lastFile.name : t.name;
-  t.sparseMap=sparseMap; t.lastFile=lastFile; t.lastBytes=lastBytes;
+  t.sparseMap=sparseMap; t.lastFile=lastFile; t.lastBytes=lastBytes; t.lastFileHandle=lastFileHandle;
   t.canvasCols=canvasCols; t.canvasRows=canvasRows; t.canvasBg=canvasBg;
   t.undoStack=undoStack; t.redoStack=redoStack; t.isCentered=isCentered;
 }
@@ -1089,7 +1231,7 @@ function switchTab(idx) {
   if (editMode) toggleEdit();
   activeTab = idx;
   const t = tabs[idx];
-  sparseMap=t.sparseMap; lastFile=t.lastFile; lastBytes=t.lastBytes;
+  sparseMap=t.sparseMap; lastFile=t.lastFile; lastBytes=t.lastBytes; lastFileHandle=t.lastFileHandle||null;
   canvasCols=t.canvasCols; canvasRows=t.canvasRows; canvasBg=t.canvasBg;
   undoStack=t.undoStack; redoStack=t.redoStack; isCentered=t.isCentered;
   curRow=0; curCol=0; selActive=false;
@@ -1118,7 +1260,7 @@ function addTab() {
   tabs.push(newTabState());
   activeTab = tabs.length - 1;
   const t = tabs[activeTab];
-  sparseMap=t.sparseMap; lastFile=null; lastBytes=null;
+  sparseMap=t.sparseMap; lastFile=null; lastBytes=null; lastFileHandle=null;
   canvasCols=80; canvasRows=25; canvasBg='#000000'; isCentered=false;
   undoStack=[]; redoStack=[]; curRow=0; curCol=0; selActive=false;
   document.getElementById('canvas-bg-swatch').style.background = canvasBg;
@@ -1165,7 +1307,8 @@ function showNewDlg() {
   document.getElementById('new-dlg').classList.add('visible');
 }
 function hideActiveDialog() {
-  if (document.getElementById('img-dlg').classList.contains('visible')) { hideImgDlg(); return; }
+  if (document.getElementById('img-dlg').classList.contains('visible'))      { hideImgDlg(); return; }
+  if (document.getElementById('new-ansi-dlg').classList.contains('visible')) { hideNewAnsiDlg(); return; }
   hideNewDlg();
 }
 function hideNewDlg() {
@@ -1193,6 +1336,91 @@ function createNewCanvas() {
   if (!editMode) toggleEdit();
   curRow = 0; curCol = 0;
   updateCursor();
+}
+
+// ── New menu ──────────────────────────────────────────────────────────────────
+function toggleNewMenu() {
+  document.getElementById('new-menu').classList.toggle('visible');
+}
+function hideNewMenu() {
+  document.getElementById('new-menu').classList.remove('visible');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('new-wrap').contains(e.target)) hideNewMenu();
+});
+
+function textToCP437Bytes(text) {
+  // Unescape common escape-sequence notations (\x1b, \033) from source/doc pastes
+  text = text.replace(/\\x1b/gi, '\x1b').replace(/\\033/g, '\x1b');
+  const out = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    if (cp < 128) {
+      out.push(cp);
+    } else {
+      const b = CP437_REV.get(cp);
+      out.push(b !== undefined ? b : 0x3F);
+    }
+  }
+  return new Uint8Array(out);
+}
+
+function _loadFromBytes(bytes, cols, name) {
+  sparseMap = new Map();
+  canvasCols = cols;
+  parse(bytes, cols);
+  const { maxRow: mr } = getBounds(sparseMap);
+  canvasRows = Math.max(mr + 1, 5);
+  lastFile = null; lastBytes = bytes;
+  undoStack = []; redoStack = [];
+  drawAll();
+  showOutput();
+  document.getElementById('filename').textContent = name;
+  document.getElementById('s-name').textContent = name;
+  document.getElementById('s-size').textContent = fmt(bytes.length);
+  const hasColor = [...sparseMap.values()].some(c => c.fg !== 7 || c.bg >= 0);
+  document.getElementById('s-type').textContent = hasColor ? 'ANSI color' : 'plain';
+  const { maxRow, maxCol } = getBounds(sparseMap);
+  document.getElementById('s-dims').textContent = `${maxCol+1}×${maxRow+1}`;
+  document.getElementById('width-wrap').classList.add('visible');
+  tabs[activeTab].name = name;
+  renderTabs();
+  if (!editMode) toggleEdit();
+  curRow = 0; curCol = 0;
+  updateCursor();
+}
+
+async function newFromClipboard() {
+  // Read clipboard BEFORE hiding the menu so the user-gesture context is intact
+  let text = '';
+  try { text = await navigator.clipboard.readText(); } catch(e) {}
+  hideNewMenu();
+  if (!text.trim()) {
+    showNewAnsiDlg();
+    return;
+  }
+  const stripped = text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+  let maxLen = 0;
+  stripped.split('\n').forEach(l => maxLen = Math.max(maxLen, l.replace(/\r$/, '').length));
+  const cols = Math.min(Math.max(maxLen || 80, 40), 320);
+  _loadFromBytes(textToCP437Bytes(text), cols, 'clipboard.ans');
+}
+
+function showNewAnsiDlg() {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('new-ansi-dlg').classList.add('visible');
+  document.getElementById('na-text').focus();
+}
+function hideNewAnsiDlg() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('new-ansi-dlg').classList.remove('visible');
+}
+function createFromAnsiCode() {
+  const cols = parseInt(document.getElementById('na-cols').value, 10) || 80;
+  const text = document.getElementById('na-text').value;
+  hideNewAnsiDlg();
+  if (!text.trim()) return;
+  _loadFromBytes(textToCP437Bytes(text), cols, 'ansi.ans');
 }
 
 // ── Center / font size ────────────────────────────────────────────────────────
@@ -1327,8 +1555,8 @@ function exportNFO() {
 }
 
 // ── Export ANS ────────────────────────────────────────────────────────────────
-function exportANS() {
-  if (sparseMap.size === 0) return;
+function buildANSBytes() {
+  if (sparseMap.size === 0) return null;
   const { maxRow } = getBounds(sparseMap);
   const rowMaxCol = new Array(maxRow+1).fill(-1);
   for (const k of sparseMap.keys()) {
@@ -1359,11 +1587,70 @@ function exportANS() {
     }
     if (r<maxRow) pushStr('\r\n');
   }
+  return new Uint8Array(bytes);
+}
+
+function exportANS() {
+  const bytes = buildANSBytes();
+  if (!bytes) return;
   const fname = lastFile ? lastFile.name.replace(/\.[^.]+$/,'') : 'untitled';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([new Uint8Array(bytes)],{type:'application/octet-stream'}));
+  a.href = URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));
   a.download = fname + '.ans';
   a.click();
+}
+
+async function openWithPicker() {
+  if (!window.showOpenFilePicker) {
+    document.getElementById('file-input').click();
+    return;
+  }
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'ANS / NFO / TXT', accept: { 'application/octet-stream': ['.nfo','.ans','.diz','.asc','.txt','.ansi'] } }],
+      multiple: false
+    });
+    lastFileHandle = handle;
+    processFile(await handle.getFile());
+  } catch(e) { /* avbröts */ }
+}
+
+function flashSaved() {
+  const el = document.getElementById('filename');
+  const orig = el.textContent;
+  el.textContent = '✓ SAVED';
+  el.style.color = 'var(--cyan)';
+  setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
+}
+
+async function saveANS() {
+  const bytes = buildANSBytes();
+  if (!bytes) return;
+  if (lastFileHandle) {
+    try {
+      const w = await lastFileHandle.createWritable();
+      await w.write(bytes);
+      await w.close();
+      flashSaved();
+      return;
+    } catch(e) { /* tillstånd nekat, fortsätt till dialog */ }
+  }
+  if (window.showSaveFilePicker) {
+    try {
+      const fname = lastFile ? lastFile.name : 'untitled.ans';
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fname,
+        types: [{ description: 'ANS file', accept: { 'application/octet-stream': ['.ans'] } }]
+      });
+      lastFileHandle = handle;
+      const w = await handle.createWritable();
+      await w.write(bytes);
+      await w.close();
+      flashSaved();
+      return;
+    } catch(e) { /* avbröts */ }
+  }
+  exportANS();
 }
 
 // ── Image → ANSI ─────────────────────────────────────────────────────────────
@@ -1395,6 +1682,15 @@ document.getElementById('img-input').addEventListener('change', function () {
   this.value = '';
 });
 
+const ASCII_RAMP = " .:-=+*#%@";
+
+function imgAsciiToggle() {
+  const ascii = document.getElementById('img-ascii').checked;
+  const halfRow = document.getElementById('img-half-row');
+  halfRow.style.opacity = ascii ? '0.35' : '';
+  document.getElementById('img-half').disabled = ascii;
+}
+
 function imgAutoRows() {
   if (!imgSrc) return;
   if (!document.getElementById('img-aspect').checked) return;
@@ -1420,7 +1716,8 @@ function doImgConvert() {
   if (!imgSrc) return;
   const cols   = parseInt(document.getElementById('img-cols').value,   10) || 80;
   const rows   = parseInt(document.getElementById('img-rows').value,   10) || 40;
-  const half   = document.getElementById('img-half').checked;
+  const ascii  = document.getElementById('img-ascii').checked;
+  const half   = !ascii && document.getElementById('img-half').checked;
   const dither = document.getElementById('img-dither').checked;
   hideImgDlg();
 
@@ -1461,7 +1758,18 @@ function doImgConvert() {
 
   for (let row=0; row<rows; row++) {
     for (let col=0; col<cols; col++) {
-      if (half) {
+      if (ascii) {
+        const [r,g,b] = getP(col, row);
+        const fg = nearest(r,g,b);
+        if (dither) {
+          const [pr,pg,pb]=palRGB[fg]; const er=r-pr,eg=g-pg,eb=b-pb;
+          addErr(col+1,row,  er,eg,eb,7/16); addErr(col-1,row+1,er,eg,eb,3/16);
+          addErr(col,  row+1,er,eg,eb,5/16); addErr(col+1,row+1,er,eg,eb,1/16);
+        }
+        const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+        const ch  = ASCII_RAMP[Math.round(lum * (ASCII_RAMP.length - 1))];
+        if (ch !== ' ') sparseMap.set(row*100000+col, { ch, fg, bg:-1 });
+      } else if (half) {
         const [r1,g1,b1] = getP(col, row*2);
         const [r2,g2,b2] = getP(col, row*2+1);
         const fg = nearest(r1,g1,b1);
@@ -1603,10 +1911,10 @@ document.getElementById('tabbar').addEventListener('click', e => {
 const dz = document.getElementById('dropzone');
 dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over')});
 dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
-dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)processFile(f)});
-document.getElementById('file-input').addEventListener('change', function(){if(this.files[0])processFile(this.files[0])});
+dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f){lastFileHandle=null;processFile(f);}});
+document.getElementById('file-input').addEventListener('change', function(){if(this.files[0]){lastFileHandle=null;processFile(this.files[0]);}});
 document.addEventListener('dragover', e=>e.preventDefault());
-document.addEventListener('drop', e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)processFile(f)});
+document.addEventListener('drop', e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){lastFileHandle=null;processFile(f);}});
 
 loadSession();
 </script>
